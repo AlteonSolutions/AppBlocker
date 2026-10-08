@@ -15,8 +15,7 @@
 
 Nothing to set up. Every build is signed with the shared key committed at
 `app/signing/appgate.keystore` (password `appgate`), so local builds, CI downloads and GitHub releases
-all install over each other. It is committed on purpose and is only acceptable while the repo is
-private; see `DECISIONS.md`.
+all install over each other. It is committed on purpose, and the repo is public; see `DECISIONS.md`.
 
 ---
 

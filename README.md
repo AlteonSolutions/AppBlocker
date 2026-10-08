@@ -35,13 +35,13 @@ Tags must be `vMAJOR.MINOR.PATCH`, each higher than the last. The tag becomes `v
 local and CI builds are `versionCode` 1. So once a tablet runs a release, update it only with a
 newer release.
 
-On the tablet, any of these works. The repo is private, so each needs GitHub access:
+On the tablet, either works, with no GitHub account (the repo is public):
 
 - **Obtainium** (recommended): an open-source app that installs and updates APKs straight from GitHub
-  Releases. Sideload it once, add the repo URL, and give it a fine-grained GitHub token with read-only
-  *Contents* access to this repo. It then offers each new release as an update.
-- **Browser or the GitHub app:** sign in to GitHub, open Releases, tap the `.apk` asset, then allow
-  that app to install unknown apps when prompted.
+  Releases. Sideload it once and add `https://github.com/AlteonSolutions/AppBlocker`. It then offers
+  each new release as an update. Obtainium can install any app, so keep it out of the kids' reach.
+- **Browser:** open the repo's Releases page, tap the `.apk` asset, then allow the browser to install
+  unknown apps when prompted.
 
 ## Layout
 

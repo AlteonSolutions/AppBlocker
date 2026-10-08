@@ -65,8 +65,8 @@ during set hours, and a parent PIN guards AppGate's own settings.
 - No secret, signed URL, token, keystore, or connection string in source. Ever — not "temporarily", not in a
   `.bat` file, not in a test fixture.
   One deliberate exception: the shared app signing key `app/signing/appgate.keystore` and its password in
-  `app/build.gradle.kts`, committed so every build can update every tablet (`DECISIONS.md`, 2026-10-08). It is
-  acceptable only while the repo is private. Making the repo public means replacing it first.
+  `app/build.gradle.kts`, committed so every build can update every tablet, in a public repo
+  (`DECISIONS.md`, 2026-10-08). No other secret gets this treatment.
 - The app reads no environment variables. The only per-machine setting is the Android SDK location:
   `ANDROID_HOME`, or `sdk.dir` in `local.properties` (gitignored, never committed). If the build ever reads
   an environment variable, document it in `SETUP.md` in the same commit.

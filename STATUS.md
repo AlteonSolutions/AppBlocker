@@ -14,6 +14,8 @@ _Last updated 2026-10-08._
 
 - GitHub Releases pipeline exists (`release.yml`), but **no release has been published yet**. Push a
   `v0.1.0` tag to publish the first one.
+- **Not yet true:** the repo is still private. The README's no-login install steps assume the owner
+  has switched it to public (Settings > General > Danger Zone).
 
 ## Next
 

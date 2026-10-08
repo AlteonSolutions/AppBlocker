@@ -23,8 +23,8 @@ android {
     // refuses to update an app signed by a different key, and the only way past that is an uninstall,
     // which wipes the PIN and every rule. Without this, each machine and each CI runner signs with its
     // own generated debug key, and builds from different places can't install over each other.
-    // The key and password are committed on purpose: the app is sideloaded onto the family's own
-    // tablets and the repo is private (see DECISIONS.md). Making the repo public means a new key.
+    // The key and password are committed on purpose, in a public repo: the app is sideloaded onto the
+    // family's own tablets and never published, so the key protects nothing worth a secret (DECISIONS.md).
     signingConfigs {
         getByName("debug") {
             storeFile = file("signing/appgate.keystore")
