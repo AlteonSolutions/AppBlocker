@@ -1,12 +1,12 @@
 ---
 description: Commit the current work with the house conventions, docs included
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(npm run:*), Bash(npm test:*)
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(./gradlew test:*)
 ---
 
 Ship what is currently uncommitted. Steps, in order:
 
 1. Run `/gate`. If anything fails, stop and report — do not commit.
-2. Check which docs this change makes stale: `README.md`, `SETUP.md`, `.env.example`, `STATUS.md`,
+2. Check which docs this change makes stale: `README.md`, `SETUP.md`, `STATUS.md`,
    `docs/`. Update them **in this commit**. Never "later".
 3. If this change departs from a recorded decision, add the superseding dated entry to
    `DECISIONS.md` now (see `/decision`).
@@ -21,7 +21,7 @@ Message format:
 - Trailers, on every commit:
 
   ```
-  Co-Authored-By: {{CLAUDE_TRAILER}}
+  Co-Authored-By: Claude <model> <noreply@anthropic.com>
   Claude-Session: <this session's url>
   ```
 

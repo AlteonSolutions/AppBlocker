@@ -13,6 +13,74 @@ old one. Entry format:
 
 ---
 
+### 2026-10-08 – Keep the APK free of runtime dependencies: no AndroidX, no Play Services
+**Context.** Target tablets are Kindle Fire (no Google Play Services) and low-RAM Android Go devices, and the APK is sideloaded.
+**Decision.** Framework classes only (`android.app.Activity`, `AlertDialog`, `TimePickerDialog`, `SharedPreferences`). `android.useAndroidX=false`. JUnit 4 is the only dependency, and it is test-only.
+**Rejected.** AndroidX AppCompat/Material: most of a megabyte for widgets the framework already has on API 25+. Play Services: absent on Fire.
+**Consequence.** The APK stays around 1 MB or less. Framework-theme UI only, and no `ViewModel`/`lifecycle` helpers, so activities stay small by design. Supersedes: none.
+
+### 2026-10-08 – Support only same-day time windows
+**Context.** An allowed window that crosses midnight complicates both the is-open check and the next-opening calculation shown on the blocked screen.
+**Decision.** A window's start must be before its end. An inverted window counts as closed, and the settings screen rejects it with a message.
+**Rejected.** Overnight windows: no current need, and they double the next-opening edge cases.
+**Consequence.** "Videos 8 PM to 1 AM" is not expressible. Revisit with per-weekday windows (an idea in `PROJECT_BRIEF.md`). Supersedes: none.
+
+### 2026-10-08 – Block nothing until a parent PIN exists
+**Context.** If the blocker were active before a PIN existed, a half-finished setup could lock the parent out of Settings with no way back in.
+**Decision.** `RuleStore.blockReason` returns allow for everything while no PIN is set.
+**Rejected.** Shipping a default PIN: it would be guessable and never changed.
+**Consequence.** An installed but unconfigured AppGate blocks nothing. The setup order in `README.md` puts PIN creation first. Supersedes: none.
+
+### 2026-10-08 – Leave browsers and app stores to other controls
+**Context.** A browser can reach video sites, and an app store can install a new video app the picker has never seen.
+**Decision.** AppGate does not handle either. They are already locked on the kids' tablets by other means.
+**Rejected.** URL filtering or store blocking in AppGate: duplicates existing controls and needs window-content access.
+**Consequence.** AppGate alone is not a complete video block on a tablet where those other controls are off. Supersedes: none.
+
+### 2026-10-08 – Lock all of `com.android.settings` outside a PIN session
+**Context.** Settings lets a child disable the accessibility service, change the clock, force-stop AppGate, revoke device admin, or uninstall.
+**Decision.** One rule: the whole Settings package is blocked unless a parent opened a 5-minute Settings pass from AppGate.
+**Rejected.** Matching individual Settings screens: fragile across Fire OS and OEM builds, and each gap is a bypass.
+**Consequence.** Kids can't reach harmless settings like brightness or Wi-Fi either, and the parent must open a pass from AppGate first. Supersedes: none.
+
+### 2026-10-08 – Do not use Device Owner mode
+**Context.** Device Owner would allow `setPackagesSuspended` and a far harder lock.
+**Decision.** Use a plain device admin with no policies, only to block uninstall.
+**Rejected.** Device Owner: provisioning requires removing every account, which is impractical with the Amazon account Fire tablets depend on.
+**Consequence.** Enforcement depends on the accessibility service staying enabled, which is why Settings is locked. A "hard mode" stays on the ideas list. Supersedes: none.
+
+### 2026-10-08 – Bounce blocked apps home and show a full-screen activity, with no overlay
+**Context.** A blocked app has to be visibly stopped. Overlays need `SYSTEM_ALERT_WINDOW`, which Android Go does not grant.
+**Decision.** On a blocked app, `GLOBAL_ACTION_HOME`, then launch `BlockedActivity`. A system-bound accessibility service is exempt from background-activity-start limits.
+**Rejected.** A `TYPE_APPLICATION_OVERLAY` window over the app: unavailable on Go.
+**Consequence.** The blocked app is backgrounded, not killed, and is re-bounced if reopened. A 30 s recheck catches an app left open past closing time. Supersedes: none.
+
+### 2026-10-08 – Detect the foreground app with an AccessibilityService rather than UsageStats polling
+**Context.** The blocker must notice an app opening, cheaply, on Go hardware and Fire OS.
+**Decision.** `GateService` listens for `TYPE_WINDOW_STATE_CHANGED` events.
+**Rejected.** Polling `UsageStatsManager`: costs battery on a timer, adds latency, and its permission flow is unreliable on Fire OS.
+**Consequence.** The parent must enable the service by hand (on Android 13+, also "Allow restricted settings" for sideloaded apps). It is per user, so each Fire profile needs its own setup. Supersedes: none.
+
+### 2026-10-08 – Ship as a sideloaded APK, with release builds signed by the debug key for now
+**Context.** Personal use on a handful of family tablets; no store listing is planned. The template's deploy-target row assumes a server.
+**Decision.** Deploy target is "none": `adb install` or copying the APK to the tablet. CI builds the debug APK and uploads it as a workflow artifact. `assembleRelease` is shrunk with R8 and signed with the debug key.
+**Rejected.** Play Store and Amazon Appstore: review overhead for a private app, and an accessibility-service blocker draws policy scrutiny.
+**Consequence.** No `needs: test` deploy job exists. The debug key differs per machine, so an APK built on another machine (or by CI) cannot install over one built locally without uninstalling first, which wipes the PIN and rules. A real keystore, kept out of the repo, would fix that. Supersedes: none.
+
+### 2026-10-08 – Gate on compile, Android Lint and JUnit, and defer a Kotlin formatter
+**Context.** The template's gate is typecheck + lint + format + tests, wired for npm. This project builds with Gradle.
+**Decision.** Gate is `./gradlew test assembleDebug lintDebug`: compiling every source set is the typecheck, Android Lint (built into AGP, no new dependency) is the linter, and JUnit 4 runs on the JVM against the framework-free logic. The pre-commit hook runs only the Kotlin compile, because Lint is slow. Version scheme: integer `versionCode`, semver `versionName`.
+**Rejected.** ktlint or Spotless now: either adds a build plugin, which the brief's no-dependency rule did not settle for build tooling. Instrumented (on-device) tests: need an emulator in CI for code that is mostly framework glue.
+**Consequence.** Formatting is unchecked, and the "Linter + formatter" variant below stays open for the formatter half. Activities, the service and preferences are verified only by hand on a device. Supersedes: none.
+
+### 2026-10-08 – Adapt the Node-oriented template to a single-module Android project
+**Context.** The template assumes Node: `package.json` engines, a lockfile, workspaces, ESM, zod, `.env` with a config module. AppGate is Kotlin on Gradle.
+**Decision.** Map each concept to its Gradle equivalent instead of leaving it unfilled. The runtime pin is JDK 17 (`app/build.gradle.kts` and CI). The "package manager" is the committed Gradle wrapper (8.9) with versions pinned in the build files (AGP 8.7.3, Kotlin 2.0.21, minSdk 25, targetSdk 34, compileSdk 35). One module, `app/`. Entry points are Android components registered in the manifest, and logic lives in framework-free Kotlin. Data access goes only through `RuleStore` and `PinManager`. There are no environment variables, so no `.env.example` or config module; validation means checking intent extras and stored values. Module system, shared-code build, migrations, `noUncheckedIndexedAccess` and LLM evaluation do not apply.
+**Rejected.** Scaffolding `package.json`, `.env.example` and a setup script anyway: they would describe tooling the project does not use. A `setup` script: AGP already fails fast and names `ANDROID_HOME`/`local.properties` when the SDK is missing.
+**Consequence.** `CLAUDE.md`'s Facts, Code and Environment sections use Android wording, and `.claude/` permissions use `./gradlew` patterns. A second Gradle module would need its own typecheck in the gate. Supersedes: none.
+
+---
+
 ## Open variants
 
 Every row below is something all four audited projects needed and answered differently, or answered
@@ -24,43 +92,23 @@ current answers.
 
 | Item | Options seen across the four projects | Recommended default | Why |
 |---|---|---|---|
-| Repo shape | `apps/*` + `packages/*` npm workspaces; `apps/*` + `packages/*` pnpm workspaces; root `src/` + a second app with its own `node_modules`; flat single-directory | `apps/*` + `packages/*` workspaces, one manager, one lockfile | The two-tree layout produced an install-order gotcha documented only inside a CI comment |
-| Package manager | npm; pnpm 10.12.1 (pinned via `packageManager`); none (manifest gitignored) | pnpm, pinned in `packageManager` | The only project that pinned it never had an install ambiguity |
-| Node major | `>=22`; `>=22`; `>=20` in package.json but `22` in CI and `'22'` in IaC; unstated | One number, repeated in `engines`, CI and IaC, changed together | The three-way disagreement caused a deploy that "succeeded" and then indexed zero functions |
-| Module system | ESM `NodeNext` with mandatory `.js` import extensions; ESM; CommonJS for the API + bundler-resolved source for web; ES5 `<script>` globals | ESM `NodeNext` | Majority; the `.js`-extension requirement must then be stated in `CLAUDE.md` — it is invisible and mandatory |
-| Test runner | Vitest 3; Vitest; hand-rolled `node:assert` scripts (2,175 lines); a bespoke diff CLI wired to nothing | Vitest | Two projects chose it deliberately; the hand-rolled suites are good tests with no runner ergonomics |
 | Linter + formatter | ESLint 9 flat + Prettier; none; none; none | ESLint flat + Prettier, config committed, `format:check` in the gate | Three of four listed "any linter at all" under what's missing before day one |
-| Deploy target | Azure App Service via ACR Docker images; Azure Static Web Apps + Functions Flex; GitHub Pages + manual paste into a CMS; unknown / run-from-source `.bat` | Whatever it is, name it in `README.md` and make one workflow the only path to it | Two projects' real deploy mechanism was recoverable only by inference |
 
 ### Repo and code
 
 | Item | Options seen | Recommended default | Why |
 |---|---|---|---|
-| Folder organisation | `core/` infra vs `modules/<feature>/`; layered `routes/ tools/ lib/`; layered `functions/ lib/ pages/ components/`; flat | Layer-per-folder: thin entry points in one folder, logic in `lib/` | Two of three opinionated projects chose it, and both cite testability as the reason |
-| Shared code: source or build | Raw `.ts`, no build step, consumed directly; cross-tree relative imports; built to `dist` for API but aliased to source for web | Build once to `dist`; if you consume source anywhere, say so in `CLAUDE.md` | The split-consumption project flagged it as a thing you'd get wrong fresh |
-| Validation | zod at boundaries (three projects); none | zod, `.strict()`, `safeParse` at every boundary | Effectively already standard; promoted out of this table into `CLAUDE.md` |
-| Data access | `withTenant()` transaction wrapper, raw pool unexported; `safeBusinessId()` at every call site; direct table client; none | One guarded entry point, raw handle unexported | Both projects with the rule had it undocumented, and both listed it as the top fresh-start hazard |
-| Migrations | Numbered hand-written SQL with explicit RLS/grants + tiny runner; none; none; none | Numbered, forward-only, hand-authored, idempotent runner | Only one project has an answer, but "easy to wrongly run `drizzle-kit generate`" is a real trap worth pinning |
 | Error-handling depth | Per-module error classes with HTTP status; typed codes with remediation text; gate objects + degrade-don't-throw; sparse local `try/catch` | Typed error codes + remediation text; secondary side effects never fail the primary action | Two projects converged on codes; the degrade rule was restated across six modules in the third |
 | Logging | pino structured with event names; `console.*`; `console.*`; framework `context.log` | Structured logger with event-name strings | Only one project does it, but it is the only one that can answer "what failed last Tuesday" |
-| Env access | `required()` helper that throws; dotenv + direct reads; direct `process.env` in 36 places; hardcoded in source | One config module, fail fast, name the missing variable | The 36-var project could only enumerate its own config by grep |
 | Secret storage | `.env` + AES-256-GCM at rest for one webhook; Azure App Service config + GH Actions secrets; Function App settings + Key Vault; a live signed URL hardcoded in source | Platform secret store + GH Actions secrets; `.env` local only | The hardcoded-secret project is the cautionary case; never carry that pattern forward |
 | Second code population | ES5 browser globals alongside modern Node tooling | Avoid; if unavoidable, state the constraint and mark duplicated symbols | Duplicated compute logic in three parallel copies meant the same bug was fixed by hand three times |
-| Version strings | Four different schemes inside one repo; package `version` only | One scheme, stated | Nobody could tell which build was live |
-| `noUncheckedIndexedAccess` | On (one project); unset elsewhere | On for new projects | Cheap on day one, expensive to retrofit |
 
 ### Quality gates
 
 | Item | Options seen | Recommended default | Why |
 |---|---|---|---|
-| Local enforcement | None; none; none; none — all four honour-system | Git `pre-commit` running typecheck + lint + format; tests in the gate script and CI | Three friction logs asked for exactly this; keep the hook fast so nobody learns `--no-verify` |
-| What CI blocks | Nothing (no CI); CI on all branches after the fact; nothing; `test` job that both deploy jobs `need` | `test` job on every push, every deploy job `needs: test` | The `needs: test` shape is the only one that actually stops a bad deploy |
-| Which typechecks are in the gate | Per-package only, no root aggregate; root + a package relying on `next build`; n/a; API in the gate, web only in the deploy job | Every package, in the gate | A web-only type error failing the deploy job instead of the test job was named as a gap |
-| Tests: source or compiled | Source; source; n/a; compiled `dist` | Source, unless the runtime demands otherwise; if compiled, `test` builds first | Editing `.ts` and re-running the test file tested the old build |
-| Test layout | `test/` sibling mirroring `src/` (three); none | `test/` mirroring source | Already near-unanimous |
 | Real deps vs mocks | Real Postgres with an RLS guard refusing privileged roles; Azurite emulator, self-skipping locally; Azurite booted by the test itself; none | Emulator/real dependency, self-skipping when unconfigured | Both projects that mocked nothing caught the bugs that mattered |
 | Test fixtures | Sanitized workbooks committed with gitignore exceptions; none | Sanitized fixtures committed, format blocked globally | Otherwise the suite depends on files that exist on one machine |
-| LLM output evaluation | Manual comparison against client deliverables | Golden-answer harness from day one if the product ships model output | Named as missing; accuracy currently rests on one person's eyes |
 
 ### Git and delivery
 
@@ -83,11 +131,7 @@ current answers.
 | Claude Code commands/agents | None in any of the four | Ship `/gate`, `/ship`, `/decision`, `/preflight`; no subagents until a repeated review actually exists | Every repeated operation was "a remembered incantation" in all four |
 | `.mcp.json` | Absent in all four; session MCP tools came from the environment | None, and record that as the decision | Absent-by-accident and absent-by-decision look identical six months later |
 | Local emulator | Azurite as a devDependency with a connection-string fallback; Azurite in CI only; Docker Compose Postgres; none | Emulator as a devDependency with a fallback so a clone runs unconfigured | The only project where a fresh clone just worked |
-| IaC | Bicep, authored, never applied, live names differ | If it exists it is authoritative; if it is not, say so in line one of the file | The doc said "not yet applied" while the workflow was already deploying |
-| Docs topic folders | `docs/SPEC.md` as source of truth; 17 root `.md` files; none; `docs/{security,runbooks,pitch}/` | `docs/` with topic folders + a doc index in `CLAUDE.md` | 17 root markdown files needed an index to be usable |
 | Auth model | Session + role CHECK + row-level security; JWT + magic links; none; Entra + a per-page gate object | Project-specific | Genuinely determined by the product |
 | Multi-tenancy | RLS with `SET LOCAL app.tenant_id`; tenant JSON file; none; partition-key-per-tenant | Enforce at the data layer, not the query site, when the database supports it | The RLS project could not leak across tenants even with a bug in a handler |
 | Dev/seed endpoint gate | Three-state `DEV_TOOLS` (`on`/`off`/environment-detected), endpoints 404 when off | Copy the three-state pattern | "Do not let a synthetic record touch a real tenant" needed three enforcement points before it stuck |
 | Side-effect integrations | SMTP + Teams webhooks behind a `*_LIVE` capture-vs-send flag; Resend; ACS email | Capture-vs-send flag, defaulting to capture | Both projects that send mail invented the same flag independently |
-| UI copy casing + tokens | Title Case + `hf-*` tokens; unstated elsewhere | Pick on day one and pin it with a date | It was corrected, then re-corrected, then dated to make it stick |
-| Committing the dependency manifest | Committed (three); `package.json` and lockfile deliberately gitignored | Commit it | The gitignored one was lost during a branch cleanup and rebuilt from memory |

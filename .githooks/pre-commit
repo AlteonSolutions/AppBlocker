@@ -2,20 +2,14 @@
 # The fast half of the gate, enforced. Across the four audited projects, nothing mechanically blocked
 # a commit and every quality gate was honour-system; CI caught things only after the fact.
 #
-# Typecheck + lint + format only — the full test suite stays in `npm run gate` and CI so this hook
-# takes seconds and nobody learns to reflex `--no-verify`.
+# Typecheck only. Android Lint takes tens of seconds even warm, so it stays in the gate and CI with
+# the tests, and there is no formatter yet (see DECISIONS.md). A slow hook teaches `--no-verify`.
 #
 # Enable once per clone (SETUP.md step): git config core.hooksPath .githooks
 
 set -e
 
 echo "pre-commit: typecheck"
-{{GATE_TYPECHECK_CMD}}
+./gradlew --quiet compileDebugKotlin compileDebugUnitTestKotlin
 
-echo "pre-commit: lint"
-{{GATE_LINT_CMD}}
-
-echo "pre-commit: format check"
-{{GATE_FORMAT_CMD}}
-
-echo "pre-commit: ok (tests run in \`npm run gate\` and in CI)"
+echo "pre-commit: ok (lint and tests run in \`./gradlew test assembleDebug lintDebug\` and in CI)"

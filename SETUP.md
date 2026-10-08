@@ -1,4 +1,24 @@
-# Starting a new project from this template
+# Fresh clone: AppGate
+
+1. Install **JDK 17** (Android Studio's bundled JBR works) and the **Android SDK** with platform
+   `android-35` and build-tools. Android Studio installs both; the command-line tools work too.
+2. Point Gradle at the SDK: set `ANDROID_HOME`, or create `local.properties` (gitignored) with
+   `sdk.dir=<path to your SDK>`. Backslashes must be doubled, e.g. Android Studio's Windows default is
+   `sdk.dir=C\:\\Users\\<you>\\AppData\\Local\\Android\\Sdk`. Opening the project once in Android Studio
+   writes this file for you.
+3. `./gradlew test assembleDebug` (`.\gradlew.bat test assembleDebug` on Windows). If the SDK is missing,
+   the build stops with "SDK location not found" and names both options above.
+4. Enable the hooks once per clone: `git config core.hooksPath .githooks`.
+5. Install on a tablet: see **Set up a tablet** in `README.md`, and record the result in `docs/devices.md`.
+
+---
+
+# Template bootstrap record
+
+The steps below are how this repo was initialized from `alteon-project-template`. They are kept for
+reference. The `{{...}}` names are the template's placeholder names, all filled in `CLAUDE.md`.
+
+## Starting a new project from this template
 
 Work top to bottom. Each step's placeholders depend on decisions made in the steps above it, so
 filling them out of order means filling some of them twice.
