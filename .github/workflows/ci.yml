@@ -9,9 +9,13 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  # release.yml runs this job as its gate, so publishing a release `needs: test`.
+  workflow_call:
 
+# github.workflow is the caller's name when called, so a tag push's own CI run and the Release run's
+# call of this workflow don't share a group and cancel each other.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -42,6 +46,26 @@ jobs:
 
       - name: Lint
         run: ./gradlew lintDebug
+
+      # Exercises the release path every push, with a throwaway key generated here (not a secret: it
+      # exists for one run and signs nothing published). Catches a broken signingConfig, version
+      # properties or R8 shrinking now, rather than on the day a release is tagged.
+      - name: Release build signs with a supplied key
+        env:
+          APPGATE_KEYSTORE_FILE: ${{ runner.temp }}/ci-throwaway.jks
+          APPGATE_KEYSTORE_PASSWORD: throwaway
+          APPGATE_KEY_ALIAS: ci
+          APPGATE_KEY_PASSWORD: throwaway
+        run: |
+          keytool -genkeypair -keystore "$APPGATE_KEYSTORE_FILE" -alias ci -keyalg RSA -keysize 2048 \
+            -validity 1 -storepass throwaway -keypass throwaway -dname "CN=AppGate CI throwaway"
+          ./gradlew assembleRelease -Pappgate.versionCode=10203 -Pappgate.versionName=1.2.3
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          APK=app/build/outputs/apk/release/app-release.apk
+          "$BT/apksigner" verify --print-certs "$APK" | tee signing.txt
+          grep -q "CN=AppGate CI throwaway" signing.txt
+          "$BT/aapt" dump badging "$APK" | head -1 | tee badging.txt
+          grep -q "versionCode='10203' versionName='1.2.3'" badging.txt
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

@@ -16,9 +16,33 @@ On Windows use `.\gradlew.bat`. The full gate, before calling anything done, is
 `./gradlew test assembleDebug lintDebug`. CI runs it on every push and attaches the debug APK to
 the workflow run as the `app-debug` artifact.
 
-`./gradlew assembleRelease` gives a shrunk APK signed with the debug key, which is fine for
-sideloading to your own devices. The debug key is per machine, so see `DECISIONS.md` before mixing
-APKs from different machines on one tablet.
+A local `./gradlew assembleRelease` gives a shrunk APK signed with your machine's debug key: fine for a
+test device, but tablets should run the signed GitHub releases (below).
+
+## Releases: install from GitHub
+
+Push a version tag and the Release workflow tests, builds and signs the APK, and publishes it as
+`appgate-<version>.apk` on the repo's Releases page:
+
+```
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+Tags must be `vMAJOR.MINOR.PATCH`, each higher than the last; the tag becomes `versionName` and
+`versionCode` (v1.2.3 is 10203). The signing key must be set up once first (`SETUP.md`). Every
+release is signed with that key, so each one installs over the last and keeps the PIN and rules.
+
+On the tablet, any of these works. The repo is private, so each needs GitHub access:
+
+- **Obtainium** (recommended): an open-source app that installs and updates APKs straight from GitHub
+  Releases. Sideload it once, add the repo URL, and give it a fine-grained GitHub token with read-only
+  *Contents* access to this repo. It then offers each new release as an update.
+- **Browser or the GitHub app:** sign in to GitHub, open Releases, tap the `.apk` asset, then allow
+  that app to install unknown apps when prompted.
+
+Debug builds, a local `assembleRelease`, and the CI `app-debug` artifact use a different key. Don't
+install those on a tablet that runs a GitHub release, or the next release won't install over them.
 
 ## Layout
 

@@ -13,6 +13,12 @@ old one. Entry format:
 
 ---
 
+### 2026-10-08 – Publish releases to GitHub Releases, signed with one stable key from repository secrets
+**Context.** Tablets should install and update AppGate straight from GitHub. Each CI runner generates its own debug key, and Android refuses an update signed by a different key. The only way past that is an uninstall, which wipes the PIN and every rule.
+**Decision.** Pushing a `vX.Y.Z` tag runs `release.yml`: the CI gate first (`needs: test`), then `assembleRelease` signed with a key held only in repository secrets, published as `appgate-X.Y.Z.apk` on a GitHub release. The tag sets `versionName`, and `versionCode = X*10000 + Y*100 + Z`, so every release is a valid update. The workflow fails rather than publish when a secret is missing. CI exercises the same signing path on every push with a throwaway key. Obtainium (with a read-only token, since the repo is private) is the recommended way to install and update on a tablet.
+**Rejected.** Installing CI artifacts: they are zipped, need a GitHub login, and are signed by a different debug key each run. Committing a keystore: a secret in source. Making the repo public to allow anonymous downloads: not needed for one family, and it can be done later without changing the pipeline.
+**Consequence.** The keystore and its passwords must be backed up outside GitHub: secrets can't be read back, and losing the key means an uninstall on every tablet. Debug and locally built APKs must not be installed on a tablet that runs releases. Minor and patch versions must stay below 100. Supersedes: 2026-10-08 (Ship as a sideloaded APK, with release builds signed by the debug key for now).
+
 ### 2026-10-08 – Keep the APK free of runtime dependencies: no AndroidX, no Play Services
 **Context.** Target tablets are Kindle Fire (no Google Play Services) and low-RAM Android Go devices, and the APK is sideloaded.
 **Decision.** Framework classes only (`android.app.Activity`, `AlertDialog`, `TimePickerDialog`, `SharedPreferences`). `android.useAndroidX=false`. JUnit 4 is the only dependency, and it is test-only.
@@ -65,7 +71,7 @@ old one. Entry format:
 **Context.** Personal use on a handful of family tablets; no store listing is planned. The template's deploy-target row assumes a server.
 **Decision.** Deploy target is "none": `adb install` or copying the APK to the tablet. CI builds the debug APK and uploads it as a workflow artifact. `assembleRelease` is shrunk with R8 and signed with the debug key.
 **Rejected.** Play Store and Amazon Appstore: review overhead for a private app, and an accessibility-service blocker draws policy scrutiny.
-**Consequence.** No `needs: test` deploy job exists. The debug key differs per machine, so an APK built on another machine (or by CI) cannot install over one built locally without uninstalling first, which wipes the PIN and rules. A real keystore, kept out of the repo, would fix that. Supersedes: none.
+**Consequence.** No `needs: test` deploy job exists. The debug key differs per machine, so an APK built on another machine (or by CI) cannot install over one built locally without uninstalling first, which wipes the PIN and rules. A real keystore, kept out of the repo, would fix that. Supersedes: none. Superseded by 2026-10-08 (Publish releases to GitHub Releases).
 
 ### 2026-10-08 – Gate on compile, Android Lint and JUnit, and defer a Kotlin formatter
 **Context.** The template's gate is typecheck + lint + format + tests, wired for npm. This project builds with Gradle.

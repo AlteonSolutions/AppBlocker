@@ -11,6 +11,38 @@
 4. Enable the hooks once per clone: `git config core.hooksPath .githooks`.
 5. Install on a tablet: see **Set up a tablet** in `README.md`, and record the result in `docs/devices.md`.
 
+## Release signing key (once, before the first `v*` tag)
+
+GitHub Releases are signed with one stable key held in repository secrets. Every future update must
+be signed with the same key, so **back the `.jks` file and its passwords up somewhere safe** (a
+password manager). If it is lost, the tablets can only take a new build after an uninstall, which
+wipes the PIN and rules.
+
+1. Create the key, on Windows in PowerShell (JDK 17's `keytool`; Android Studio ships one under
+   `jbr\bin`). Use the same password for the store and the key when asked:
+   ```
+   keytool -genkeypair -v -keystore appgate-release.jks -alias appgate -keyalg RSA -keysize 2048 -validity 10000
+   ```
+2. Copy it as base64:
+   ```
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("appgate-release.jks")) | Set-Clipboard
+   ```
+3. GitHub > the repo > Settings > Secrets and variables > Actions > New repository secret, four times:
+
+   | Secret | Value |
+   |---|---|
+   | `APPGATE_KEYSTORE_BASE64` | the clipboard from step 2 |
+   | `APPGATE_KEYSTORE_PASSWORD` | the store password |
+   | `APPGATE_KEY_ALIAS` | `appgate` |
+   | `APPGATE_KEY_PASSWORD` | the key password (same as the store password) |
+
+4. Keep `appgate-release.jks` out of the repo (`*.jks` is gitignored) and out of the project folder.
+
+The build reads these as environment variables `APPGATE_KEYSTORE_FILE`, `APPGATE_KEYSTORE_PASSWORD`,
+`APPGATE_KEY_ALIAS` and `APPGATE_KEY_PASSWORD`, only in `app/build.gradle.kts`. All are optional:
+without them a release build is signed with your machine's debug key, which is fine for a local test.
+If `APPGATE_KEYSTORE_FILE` is set, the other three are required and the build names any that is missing.
+
 ---
 
 # Template bootstrap record

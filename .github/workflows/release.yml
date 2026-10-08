@@ -1,0 +1,83 @@
+# Publishes a signed APK to GitHub Releases when a version tag is pushed:
+#   git tag v0.2.0 && git push origin v0.2.0
+# The release asset is what a tablet installs from (browser, GitHub app, or Obtainium).
+#
+# Every published APK must be signed with the same key and carry a higher versionCode than the last,
+# or the tablet refuses the update and the only fix is an uninstall, which wipes the PIN and rules.
+# So this workflow fails rather than publish without the signing secrets (see SETUP.md).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag and signing secrets
+        env:
+          TAG: ${{ github.ref_name }}
+          KEYSTORE_BASE64: ${{ secrets.APPGATE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.APPGATE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.APPGATE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.APPGATE_KEY_PASSWORD }}
+        run: |
+          # Minor and patch stay under 100 so versionCode = major*10000 + minor*100 + patch keeps rising.
+          if [[ ! "$TAG" =~ ^v([0-9]+)\.([0-9]{1,2})\.([0-9]{1,2})$ ]]; then
+            echo "::error::Tag '$TAG' must look like v1.2.3, with minor and patch below 100."
+            exit 1
+          fi
+          for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository secret APPGATE_$name is not set. See 'Release signing key' in SETUP.md."
+              exit 1
+            fi
+          done
+          major=${BASH_REMATCH[1]}; minor=$((10#${BASH_REMATCH[2]})); patch=$((10#${BASH_REMATCH[3]}))
+          echo "VERSION_NAME=$major.$minor.$patch" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$((major * 10000 + minor * 100 + patch))" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # The action's default package list includes the long-removed `tools` package, which fails sdkmanager.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build signed release APK
+        env:
+          APPGATE_KEYSTORE_FILE: ${{ runner.temp }}/release.jks
+          APPGATE_KEYSTORE_PASSWORD: ${{ secrets.APPGATE_KEYSTORE_PASSWORD }}
+          APPGATE_KEY_ALIAS: ${{ secrets.APPGATE_KEY_ALIAS }}
+          APPGATE_KEY_PASSWORD: ${{ secrets.APPGATE_KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.APPGATE_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$APPGATE_KEYSTORE_FILE"
+          ./gradlew assembleRelease -Pappgate.versionCode="$VERSION_CODE" -Pappgate.versionName="$VERSION_NAME"
+          rm -f "$APPGATE_KEYSTORE_FILE"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk
+          cp app/build/outputs/apk/release/app-release.apk "appgate-$VERSION_NAME.apk"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" "appgate-$VERSION_NAME.apk" \
+            --title "AppGate $VERSION_NAME" --generate-notes

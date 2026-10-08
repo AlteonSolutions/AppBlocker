@@ -65,8 +65,10 @@ during set hours, and a parent PIN guards AppGate's own settings.
 - No secret, signed URL, token, keystore, or connection string in source. Ever — not "temporarily", not in a
   `.bat` file, not in a test fixture.
 - The app reads no environment variables. The only per-machine setting is the Android SDK location:
-  `ANDROID_HOME`, or `sdk.dir` in `local.properties` (gitignored, never committed). If the app ever needs
-  configuration, add `.env.example`-style documentation for it in the same commit.
+  `ANDROID_HOME`, or `sdk.dir` in `local.properties` (gitignored, never committed). The build reads the
+  optional `APPGATE_KEYSTORE_FILE`, `APPGATE_KEYSTORE_PASSWORD`, `APPGATE_KEY_ALIAS` and `APPGATE_KEY_PASSWORD`
+  for release signing; they and the repository secrets behind them are documented in `SETUP.md`. A new
+  variable gets documented there in the same commit.
 - Build configuration is read only in `app/build.gradle.kts`. No scattered `BuildConfig` or `System.getenv` reads.
 - A fresh clone must reach a working build with `./gradlew assembleDebug` and nothing else beyond JDK 17 and the
   Android SDK. If the SDK is missing, AGP fails fast and names `ANDROID_HOME` and `local.properties`.
