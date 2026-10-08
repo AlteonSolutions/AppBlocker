@@ -12,8 +12,8 @@ _Last updated 2026-10-08._
   the `app-debug` artifact on each CI run.
 - **Not yet built on the parent's Windows machine, and not yet run on any device.**
 
-- GitHub Releases pipeline exists (`release.yml`), but **no release has been published yet**:
-  the signing secrets are not set up (`SETUP.md`, "Release signing key").
+- GitHub Releases pipeline exists (`release.yml`), but **no release has been published yet**. Push a
+  `v0.1.0` tag to publish the first one.
 
 ## Next
 

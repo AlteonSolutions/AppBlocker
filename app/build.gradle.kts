@@ -3,16 +3,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// Stable release signing key, passed in by .github/workflows/release.yml from repository secrets.
-// Android refuses to update an app signed by a different key, and the only way past that is an
-// uninstall, which wipes the PIN and every rule. So every APK published to GitHub Releases must be
-// signed by this one key. Without these variables (any local build), release falls back to the
-// per-machine debug key, which is fine for a test install and never published.
-val releaseKeystore: String? = providers.environmentVariable("APPGATE_KEYSTORE_FILE").orNull
-
-fun requiredEnv(name: String): String = providers.environmentVariable(name).orNull
-    ?: throw GradleException("$name must be set when APPGATE_KEYSTORE_FILE is. See SETUP.md.")
-
 android {
     namespace = "com.alteon.appgate"
     compileSdk = 35
@@ -29,14 +19,18 @@ android {
         versionName = (findProperty("appgate.versionName") as String?) ?: "0.1.0"
     }
 
+    // One shared signing key for every build: local debug, CI artifacts and GitHub releases. Android
+    // refuses to update an app signed by a different key, and the only way past that is an uninstall,
+    // which wipes the PIN and every rule. Without this, each machine and each CI runner signs with its
+    // own generated debug key, and builds from different places can't install over each other.
+    // The key and password are committed on purpose: the app is sideloaded onto the family's own
+    // tablets and the repo is private (see DECISIONS.md). Making the repo public means a new key.
     signingConfigs {
-        if (releaseKeystore != null) {
-            create("release") {
-                storeFile = file(releaseKeystore)
-                storePassword = requiredEnv("APPGATE_KEYSTORE_PASSWORD")
-                keyAlias = requiredEnv("APPGATE_KEY_ALIAS")
-                keyPassword = requiredEnv("APPGATE_KEY_PASSWORD")
-            }
+        getByName("debug") {
+            storeFile = file("signing/appgate.keystore")
+            storePassword = "appgate"
+            keyAlias = "appgate"
+            keyPassword = "appgate"
         }
     }
 
@@ -48,7 +42,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
+            // Same shared key as debug builds, so a release installs over a debug build and vice versa.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

@@ -47,23 +47,19 @@ jobs:
       - name: Lint
         run: ./gradlew lintDebug
 
-      # Exercises the release path every push, with a throwaway key generated here (not a secret: it
-      # exists for one run and signs nothing published). Catches a broken signingConfig, version
-      # properties or R8 shrinking now, rather than on the day a release is tagged.
-      - name: Release build signs with a supplied key
-        env:
-          APPGATE_KEYSTORE_FILE: ${{ runner.temp }}/ci-throwaway.jks
-          APPGATE_KEYSTORE_PASSWORD: throwaway
-          APPGATE_KEY_ALIAS: ci
-          APPGATE_KEY_PASSWORD: throwaway
+      # Every build must be signed with the committed shared key, or a tablet refuses it as an update
+      # and the fix is an uninstall that wipes the PIN. Builds the release variant (R8 shrinking, version
+      # properties as the release workflow passes them) and checks its certificate against the keystore.
+      - name: Release build is signed with the shared key
         run: |
-          keytool -genkeypair -keystore "$APPGATE_KEYSTORE_FILE" -alias ci -keyalg RSA -keysize 2048 \
-            -validity 1 -storepass throwaway -keypass throwaway -dname "CN=AppGate CI throwaway"
           ./gradlew assembleRelease -Pappgate.versionCode=10203 -Pappgate.versionName=1.2.3
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           APK=app/build/outputs/apk/release/app-release.apk
-          "$BT/apksigner" verify --print-certs "$APK" | tee signing.txt
-          grep -q "CN=AppGate CI throwaway" signing.txt
+          want=$(keytool -list -v -keystore app/signing/appgate.keystore -storepass appgate -alias appgate \
+            | sed -n 's/^.*SHA256: //p' | tr -d ':' | tr 'A-F' 'a-f')
+          got=$("$BT/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          echo "keystore $want"; echo "apk      $got"
+          [ -n "$want" ] && [ "$want" = "$got" ]
           "$BT/aapt" dump badging "$APK" | head -1 | tee badging.txt
           grep -q "versionCode='10203' versionName='1.2.3'" badging.txt
 

@@ -35,6 +35,7 @@ coverage/
 /local.properties
 *.apk
 *.aab
-# signing keys never enter the repo
+# signing keys never enter the repo, except the shared key below (see DECISIONS.md)
 *.jks
 *.keystore
+!/app/signing/appgate.keystore
