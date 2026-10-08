@@ -4,9 +4,11 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.TimePickerDialog
 import android.app.admin.DevicePolicyManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.format.DateFormat
@@ -45,6 +47,7 @@ class SettingsActivity : Activity() {
             rules.startSettingsSession()
             startActivity(Intent(Settings.ACTION_SETTINGS))
         }
+        button(R.id.updateButton).setOnClickListener { downloadLatest() }
         button(R.id.changePinButton).setOnClickListener {
             startActivity(PinActivity.resetIntent(this))
             finish()
@@ -85,6 +88,8 @@ class SettingsActivity : Activity() {
         renderWindow(s.weekend, R.id.weekendEnabled, R.id.weekendStart, R.id.weekendEnd)
 
         val now = System.currentTimeMillis()
+        button(R.id.updateButton).text = getString(R.string.update_app, installedVersion())
+
         button(R.id.overrideButton).text = if (now < rules.overrideUntil) {
             getString(R.string.override_end, formatTime(rules.overrideUntil))
         } else {
@@ -170,6 +175,24 @@ class SettingsActivity : Activity() {
             .show()
     }
 
+    /**
+     * Opens the browser on the newest release APK; the browser downloads it and the system installer
+     * updates AppGate in place, keeping the PIN and rules. This replaces keeping Obtainium on the
+     * tablet, where the kids could use it. The Settings pass is needed because the first install from a
+     * browser sends the parent to Android Settings to allow it, and AppGate otherwise blocks Settings.
+     */
+    private fun downloadLatest() {
+        rules.startSettingsSession()
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LATEST_APK_URL)))
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, R.string.update_no_browser, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun installedVersion(): String =
+        runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "?"
+
     private fun requestDeviceAdmin() {
         rules.startSettingsSession()
         startActivity(
@@ -206,4 +229,11 @@ class SettingsActivity : Activity() {
         DateFormat.getTimeFormat(this).format(java.util.Date(millis))
 
     private fun button(id: Int): Button = findViewById(id)
+
+    companion object {
+        // GitHub redirects this to the newest release's asset. release.yml uploads every release under
+        // this fixed name as well as a versioned one, so this one link never goes stale.
+        private const val LATEST_APK_URL =
+            "https://github.com/AlteonSolutions/AppBlocker/releases/latest/download/appgate.apk"
+    }
 }

@@ -38,13 +38,16 @@ Tags must be `vMAJOR.MINOR.PATCH`, each higher than the last. The tag becomes `v
 local and CI builds are `versionCode` 1. So once a tablet runs a release, update it only with a
 newer release.
 
-On the tablet, either works, with no GitHub account (the repo is public):
+Each release carries the APK twice: `appgate-<version>.apk`, and `appgate.apk` so that
+`https://github.com/AlteonSolutions/AppBlocker/releases/latest/download/appgate.apk` always downloads
+the newest one. No GitHub account is needed (the repo is public).
 
-- **Obtainium** (recommended): an open-source app that installs and updates APKs straight from GitHub
-  Releases. Sideload it once and add `https://github.com/AlteonSolutions/AppBlocker`. It then offers
-  each new release as an update. Obtainium can install any app, so keep it out of the kids' reach.
-- **Browser:** open the repo's Releases page, tap the `.apk` asset, then allow the browser to install
-  unknown apps when prompted.
+**Updating a tablet:** unlock the browser by whatever means it is normally locked, open AppGate,
+enter the PIN, tap **Download latest AppGate** under Parent tools, open the download and tap
+**Install** (or **Update**). The PIN and rules are kept. The button also starts the 5-minute Settings
+pass, in case Android asks to allow the browser to install apps. Then lock the browser again.
+
+**First install** (before AppGate is on the tablet): open that same link in the tablet's browser.
 
 ## Layout
 
@@ -85,7 +88,8 @@ Settings locked) is in `DECISIONS.md`.
 4. **Turn on blocker.** This opens Accessibility settings; enable "AppGate video schedule".
    - Android 13+ only: if the switch is greyed out ("restricted setting"), go to Settings > Apps > AppGate > ⋮ > Allow restricted settings, then try again.
 5. **Turn on uninstall protection** (device admin).
-6. **Choose video apps** and set the allowed hours.
+6. **Choose video apps** and set the allowed hours. Don't add the browser if it is locked some other
+   way: **Download latest AppGate** needs it to open.
 7. **Lock and close.**
 
 On Fire, if the kids use a separate profile, install and set up AppGate inside that profile. Accessibility services are per user.

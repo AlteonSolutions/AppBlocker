@@ -12,8 +12,9 @@ _Last updated 2026-10-08._
   the `app-debug` artifact on each CI run.
 - **Not yet built on the parent's Windows machine, and not yet run on any device.**
 
-- GitHub Releases pipeline exists (`release.yml`), but **no release has been published yet**. Push a
-  `v0.1.0` tag to publish the first one.
+- Releases publish to GitHub (`release.yml`). 0.1.0 is out. From 0.2.0, tablets update through
+  **Download latest AppGate** under Parent tools, so Obtainium is no longer needed.
+- **Not yet verified on a device:** the release build itself, and the download-and-update flow.
 
 ## Next
 

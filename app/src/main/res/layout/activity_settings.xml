@@ -45,6 +45,7 @@
         <TextView style="@style/Section" android:text="@string/section_parent" />
         <Button android:id="@+id/overrideButton" style="@style/RowButton" />
         <Button android:id="@+id/openSettingsButton" style="@style/RowButton" android:text="@string/open_settings" />
+        <Button android:id="@+id/updateButton" style="@style/RowButton" />
         <Button android:id="@+id/changePinButton" style="@style/RowButton" android:text="@string/change_pin" />
         <Button android:id="@+id/lockButton" style="@style/RowButton" android:text="@string/lock_now" />
     </LinearLayout>

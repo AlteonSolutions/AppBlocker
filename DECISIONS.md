@@ -13,6 +13,12 @@ old one. Entry format:
 
 ---
 
+### 2026-10-08 – Update tablets from an in-app download link instead of Obtainium
+**Context.** Obtainium stayed installed on the kids' tablets to deliver updates. It can install any app, and the kids would poke at it. Updates are expected only a handful of times, while AppGate is being made to work properly.
+**Decision.** A **Download latest AppGate** button under Parent tools (behind the PIN) opens the browser on `releases/latest/download/appgate.apk`. Every release uploads the APK under that fixed name as well as the versioned one, so the link never changes. The button also starts the 5-minute Settings pass, because the first browser install sends the parent to Android Settings, which AppGate otherwise blocks. The button shows the installed version.
+**Rejected.** Keeping Obtainium: an installer the kids can reach. AppGate downloading and installing itself: no browser needed, but it needs the install-packages permission, a package-installer session and a status receiver. That is more code and more device risk than a link, for a handful of updates.
+**Consequence.** The parent must unlock the browser around each update, and lock it again after. If the browser is one of AppGate's blocked video apps, the button is bounced outside the allowed hours. The Settings pass stays open for its 5 minutes after the browser opens, because Settings closes as soon as it is left. Supersedes: 2026-10-08 (Make the repo public), only its recommendation of Obtainium.
+
 ### 2026-10-08 – Make the repo public, with the shared signing key still committed
 **Context.** Installing from GitHub on a tablet needs a login or an Obtainium token while the repo is private. The kids are young, and the app only ever runs on the family's own tablets.
 **Decision.** Make the repo public and keep the committed signing key. Releases then download with no account, and Obtainium needs only the repo URL. A stranger still can't reach the tablets: an update needs someone to install it on the unlocked tablet, and only accounts with write access can publish this repo's releases.

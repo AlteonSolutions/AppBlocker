@@ -51,6 +51,8 @@
     <string name="override_start">Allow videos for %1$d minutes</string>
     <string name="override_end">End video override (running until %1$s)</string>
     <string name="open_settings">Open Android Settings (5 minutes)</string>
+    <string name="update_app">Download latest AppGate (this is %1$s)</string>
+    <string name="update_no_browser">No web browser could open the download. Turn the browser on, then try again.</string>
     <string name="change_pin">Change PIN</string>
     <string name="lock_now">Lock and close</string>
 </resources>

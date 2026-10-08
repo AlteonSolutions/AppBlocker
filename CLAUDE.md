@@ -109,6 +109,6 @@ during set hours, and a parent PIN guards AppGate's own settings.
 - (2026-10-08) Ship everything all the way; the owner does no manual git or GitHub steps. Once a change
   is green in CI, push it to `main`, and if it changes the app, publish a release (Actions > Release >
   Run workflow with the next version: patch for fixes, minor for features) and confirm the APK is on the
-  Releases page so Obtainium offers it. Docs-only or CI-only changes go to `main` without a release.
+  Releases page so the in-app download link gets it. Docs-only or CI-only changes go to `main` without a release.
   Only steps that need the physical tablet are the owner's; say plainly what shipped and what, if
   anything, they need to do on a tablet.
