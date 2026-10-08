@@ -12,9 +12,11 @@ _Last updated 2026-10-08._
   the `app-debug` artifact on each CI run.
 - **Not yet built on the parent's Windows machine, and not yet run on any device.**
 
-- Releases publish to GitHub (`release.yml`). 0.1.0 is out. From 0.2.0, tablets update through
+- Releases publish to GitHub (`release.yml`). Latest is 0.2.1. From 0.2.0, tablets update through
   **Download latest AppGate** under Parent tools, so Obtainium is no longer needed.
-- **Not yet verified on a device:** the release build itself, and the download-and-update flow.
+- On a Kindle Fire, 0.1.0 blocked apps with only a flicker and never showed the blocked screen.
+  0.2.1 shows the blocked screen first and goes home when it is dismissed.
+- **Not yet verified on a device:** the 0.2.1 blocked screen, and the download-and-update flow.
 
 ## Next
 
