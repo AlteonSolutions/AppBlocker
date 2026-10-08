@@ -1,0 +1,55 @@
+# Runs on every branch, not just the trunk: two of the four source projects had no CI at all and
+# their only real regression check ran against nothing automatically.
+#
+# The `test` job is the gate. Any deploy job you add must declare `needs: test`. There is none today:
+# AppGate is sideloaded, so the debug APK is uploaded as a workflow artifact instead.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # gradle-wrapper.jar is an executable binary in the repo; fail if it isn't a published Gradle release.
+      - uses: gradle/actions/wrapper-validation@v4
+
+      # JDK 17 must equal compileOptions and kotlinOptions.jvmTarget in app/build.gradle.kts.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Installs the command-line tools and accepts licenses, so AGP can fetch platform 35 and build-tools.
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test and build debug APK
+        run: ./gradlew test assembleDebug
+
+      - name: Lint
+        run: ./gradlew lintDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload test and lint reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: app/build/reports/

@@ -13,7 +13,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 On Windows use `.\gradlew.bat`. The full gate, before calling anything done, is
-`./gradlew test assembleDebug lintDebug`.
+`./gradlew test assembleDebug lintDebug`. CI runs it on every push and attaches the debug APK to
+the workflow run as the `app-debug` artifact.
 
 `./gradlew assembleRelease` gives a shrunk APK signed with the debug key, which is fine for
 sideloading to your own devices. The debug key is per machine, so see `DECISIONS.md` before mixing
