@@ -15,7 +15,7 @@ class BlockedActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_blocked)
-        findViewById<Button>(R.id.okButton).setOnClickListener { finish() }
+        findViewById<Button>(R.id.okButton).setOnClickListener { goHome() }
         render(intent)
     }
 
@@ -25,8 +25,21 @@ class BlockedActivity : Activity() {
         render(intent)
     }
 
+    // The blocked app is still open underneath, so leaving this screen must not reveal it.
+    @Deprecated("Back is still delivered here at targetSdk 34 without the predictive-back opt-in")
+    override fun onBackPressed() = goHome()
+
     override fun onStop() {
         super.onStop()
+        finish()
+    }
+
+    private fun goHome() {
+        startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_HOME)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
         finish()
     }
 

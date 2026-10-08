@@ -68,7 +68,7 @@ Zero runtime dependencies: framework classes only, no AndroidX, no Play Services
 
 | File | Role |
 |---|---|
-| `GateService` | AccessibilityService. On `TYPE_WINDOW_STATE_CHANGED`, asks `RuleStore.blockReason(pkg)`; if blocked, `GLOBAL_ACTION_HOME` then launches `BlockedActivity`. A 30 s recheck catches an app left open past closing time. Ignores systemui and the current keyboard. |
+| `GateService` | AccessibilityService. On `TYPE_WINDOW_STATE_CHANGED`, asks `RuleStore.blockReason(pkg)`; if blocked, launches `BlockedActivity` over it, which goes home when dismissed. A 30 s recheck catches an app left open past closing time. Ignores systemui and the current keyboard. |
 | `RuleStore` | SharedPreferences: video package set, weekday and weekend windows, parent override expiry, Settings session expiry. Owns the single allow/block decision. |
 | `Schedule` / `TimeWindow` | Pure logic: is-open and next-opening. Unit tested. |
 | `PinManager` / `LockoutPolicy` | Salted PBKDF2WithHmacSHA1 (20k iterations) PIN hash; lockout 1, 5, then 15 min after 5, 6, 7+ wrong tries. Policy unit tested. |

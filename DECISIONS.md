@@ -13,6 +13,12 @@ old one. Entry format:
 
 ---
 
+### 2026-10-08 – Show the blocked screen first and go home when it is dismissed
+**Context.** On a Kindle Fire, opening a blocked app only flickered: no "Videos are closed" screen. `GateService` sent `GLOBAL_ACTION_HOME` and then launched `BlockedActivity`. The home screen arrived after the blocked screen had opened, which stopped it, and `BlockedActivity` finishes itself on stop.
+**Decision.** `GateService` launches `BlockedActivity` over the blocked app and does not go home itself. `BlockedActivity`'s OK and Back both go home, and it still finishes on stop. If the blocked screen fails to launch, the service falls back to going home.
+**Rejected.** Keeping home-first and delaying the blocked screen: a timing guess that slower Fire hardware would beat. Not finishing on stop: the screen would then sit hidden behind the home screen, and still be invisible.
+**Consequence.** While the message shows, the blocked app is stopped underneath rather than sent home. If a kid reaches it again through recent apps, it is bounced again. Supersedes: 2026-10-08 (Bounce blocked apps home and show a full-screen activity), only its order of home then screen; no overlay is still the rule.
+
 ### 2026-10-08 – Update tablets from an in-app download link instead of Obtainium
 **Context.** Obtainium stayed installed on the kids' tablets to deliver updates. It can install any app, and the kids would poke at it. Updates are expected only a handful of times, while AppGate is being made to work properly.
 **Decision.** A **Download latest AppGate** button under Parent tools (behind the PIN) opens the browser on `releases/latest/download/appgate.apk`. Every release uploads the APK under that fixed name as well as the versioned one, so the link never changes. The button also starts the 5-minute Settings pass, because the first browser install sends the parent to Android Settings, which AppGate otherwise blocks. The button shows the installed version.

@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
 /**
@@ -41,8 +42,15 @@ class GateService : AccessibilityService() {
         if (pkg == packageName) return
         val reason = rules.blockReason(pkg) ?: return
         foregroundPkg = null
-        performGlobalAction(GLOBAL_ACTION_HOME)
-        startActivity(BlockedActivity.intent(this, reason))
+        // Cover the app with the blocked screen; that screen goes home when it is dismissed. Going home
+        // first raced the launch on Kindle Fire: home arrived after the blocked screen opened, stopped
+        // it, and it finishes on stop, so kids saw a flicker and no message.
+        try {
+            startActivity(BlockedActivity.intent(this, reason))
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "blocked screen failed to open; going home instead", e)
+            performGlobalAction(GLOBAL_ACTION_HOME)
+        }
     }
 
     private fun currentKeyboardPackage(): String? =
@@ -57,6 +65,7 @@ class GateService : AccessibilityService() {
     }
 
     companion object {
+        private const val TAG = "GateService"
         private const val RECHECK_MS = 30_000L
         private val TRANSIENT_PACKAGES = setOf("com.android.systemui")
     }
