@@ -30,6 +30,9 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
+No git handy? On GitHub (website or app), go to Actions > Release > Run workflow, enter the version
+(`0.2.0`), and run it on `main`. It creates the tag for you.
+
 Tags must be `vMAJOR.MINOR.PATCH`, each higher than the last. The tag becomes `versionName` and
 `versionCode` (v1.2.3 is 10203). Android won't install a lower `versionCode` over a higher one, and
 local and CI builds are `versionCode` 1. So once a tablet runs a release, update it only with a

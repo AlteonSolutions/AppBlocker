@@ -1,5 +1,7 @@
-# Publishes a signed APK to GitHub Releases when a version tag is pushed:
-#   git tag v0.2.0 && git push origin v0.2.0
+# Publishes a signed APK to GitHub Releases, started either way:
+#   - push a version tag: git tag v0.2.0 && git push origin v0.2.0
+#   - or Actions > Release > Run workflow, version 0.2.0. The release then creates the v0.2.0 tag on the
+#     chosen branch's head. Exists because a phone, or a session that can't push tags, can still do this.
 # The release asset is what a tablet installs from (browser, GitHub app, or Obtainium).
 #
 # Every published APK must be signed with the same key and carry a higher versionCode than the last,
@@ -10,6 +12,11 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, like 0.2.0 (becomes tag v0.2.0)"
+        required: true
 
 permissions:
   contents: write
@@ -21,12 +28,12 @@ jobs:
   release:
     needs: test
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Check tag
-        env:
-          TAG: ${{ github.ref_name }}
         run: |
           # Minor and patch stay under 100 so versionCode = major*10000 + minor*100 + patch keeps rising.
           if [[ ! "$TAG" =~ ^v([0-9]+)\.([0-9]{1,2})\.([0-9]{1,2})$ ]]; then
@@ -57,7 +64,7 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" "appgate-$VERSION_NAME.apk" \
+          # --target only matters for a manual run, where the tag doesn't exist yet and is created here.
+          gh release create "$TAG" "appgate-$VERSION_NAME.apk" --target "$GITHUB_SHA" \
             --title "AppGate $VERSION_NAME" --generate-notes
