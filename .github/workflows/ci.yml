@@ -30,7 +30,10 @@ jobs:
           java-version: "17"
 
       # Installs the command-line tools and accepts licenses, so AGP can fetch platform 35 and build-tools.
+      # The action's default package list includes the long-removed `tools` package, which fails sdkmanager.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - uses: gradle/actions/setup-gradle@v4
 
