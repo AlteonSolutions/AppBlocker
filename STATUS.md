@@ -6,13 +6,15 @@ _Last updated 2026-10-08._
 
 - All app code from the brief exists: blocker service, rule store, schedule, PIN with lockout,
   PIN, settings and blocked screens, device admin. See the architecture table in `README.md`.
-- Pure logic (`Schedule`, `LockoutPolicy`) has 14 JUnit tests. Before import they had been compiled
-  and passed outside Gradle, and all app Kotlin type-checked against the API 30 framework.
-- **Not yet built with Gradle/AGP, and not yet run on any device.**
+- Pure logic (`Schedule`, `LockoutPolicy`) has 14 JUnit tests.
+- First Gradle/AGP build is green in CI (2026-10-08): `./gradlew test assembleDebug` and
+  `./gradlew lintDebug` pass on JDK 17 with no changes to the imported app code. The debug APK is
+  the `app-debug` artifact on each CI run.
+- **Not yet built on the parent's Windows machine, and not yet run on any device.**
 
 ## Next
 
-1. `./gradlew test assembleDebug lintDebug` green locally and in CI.
+1. `.\gradlew.bat test assembleDebug` locally, after pointing Gradle at the SDK (`SETUP.md`).
 2. Install on one Fire tablet and one Android Go tablet and walk the setup in `README.md`. Record
    the results in `docs/devices.md`.
 
