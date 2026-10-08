@@ -1,2 +1,6 @@
 *.sh text eol=lf
 .githooks/pre-commit text eol=lf
+# The wrapper script runs under bash (CI, Git Bash pre-commit hook) and breaks with CRLF.
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary

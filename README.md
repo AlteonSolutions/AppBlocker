@@ -1,58 +1,72 @@
-# alteon-project-template
+# AppGate
 
-The standard starting point for Alteon Solutions projects. Synthesized from audits of four existing
-Claude Code projects — every rule in here earned its place by having been a real correction, a real
-outage, or a real thing that broke on a fresh clone.
+A tiny Android app that only lets video apps open during set hours, with a parent PIN guarding its
+settings. Built for Kindle Fire (Fire OS 6 to 8) and Android Go tablets, and sideloaded.
 
-**This README is replaced during init.** If you are reading it inside a project, init has not run.
+## Quick start
 
-## Starting a new project
+Requires JDK 17+ and the Android SDK (platform 35). See `SETUP.md` for pointing Gradle at the SDK.
 
-1. On GitHub: **Use this template → Create a new repository**.
-2. Clone it and open Claude Code in it.
-3. Paste: `Read INIT.md and follow it exactly.`
+```
+./gradlew test assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
-`INIT.md` interviews you on the ~12 real decisions, fills all 27 placeholders across every file,
-scaffolds `package.json` / `.env.example` / docs, wires the hooks, records the decisions, verifies
-the result, and deletes itself.
+On Windows use `.\gradlew.bat`. The full gate, before calling anything done, is
+`./gradlew test assembleDebug lintDebug`.
 
-Doing it by hand instead: work through `SETUP.md` top to bottom. Same outcome, more typing, and the
-`NODE_MAJOR`-in-three-places check is on you.
+`./gradlew assembleRelease` gives a shrunk APK signed with the debug key, which is fine for
+sideloading to your own devices. The debug key is per machine, so see `DECISIONS.md` before mixing
+APKs from different machines on one tablet.
 
-## What's in here
+## Layout
 
 | Path | What it is |
 |---|---|
-| `CLAUDE.md` | The house rules. The main artifact — everything else enforces some line in it. |
-| `SETUP.md` | Ordered fresh-clone checklist, with which placeholders belong to which step. |
-| `DECISIONS.md` | Entry format, plus the open-variant tables with a recommended default per row. |
-| `INIT.md` | The one-time bootstrap prompt. Deleted at the end of init. |
-| `.claude/settings.json` | Permission allow/deny list and the session-logging hooks. |
-| `.claude/commands/` | `/gate`, `/preflight`, `/ship`, `/decision`. |
-| `.claude/hooks/session-log.sh` | Build-time ledger → `.claude/sessions.csv`, persisted to a `worklog` branch. |
-| `.githooks/pre-commit` | Typecheck + lint + format, enforced. Tests stay in `gate` and CI. |
-| `.github/workflows/ci.yml.tpl` | CI. Parked as `.tpl` until its placeholders are filled — see below. |
-| `.gitignore` | Includes the Claude Code entries and blocks customer-data formats by extension. |
+| `app/src/main/java/com/alteon/appgate/` | All Kotlin. Android components plus framework-free logic. |
+| `app/src/main/res/` | Layouts, strings, themes, the vector launcher icon, accessibility and device-admin config. |
+| `app/src/main/AndroidManifest.xml` | Every activity, service and receiver must be registered here. |
+| `app/src/test/java/com/alteon/appgate/` | JUnit 4 tests for the pure logic, run on the JVM. |
+| `gradle/wrapper/`, `gradlew`, `gradlew.bat` | The pinned Gradle 8.9 wrapper. Always build through it. |
+| `PROJECT_BRIEF.md` | The original brief: purpose, target devices, stack, decisions. |
+| `STATUS.md` | Where things stand. |
+| `docs/devices.md` | Per-device install and test notes. |
 
-## Two things that are easy to get wrong
+## Architecture
 
-**The CI workflow is parked.** In template state, `run: {{GATE_TEST_CMD}}` is not valid YAML — `{`
-opens a flow mapping. Left as `ci.yml`, every push to this template repo and to every repo created
-from it would fail with an invalid-workflow error before you'd written a line of code. It stays
-`.tpl` (which GitHub ignores) until init fills it and renames it.
+Zero runtime dependencies: framework classes only, no AndroidX, no Play Services.
 
-**`npm` is hardcoded in two places the placeholders don't reach**: the permission patterns in
-`.claude/settings.json` and the `allowed-tools` frontmatter in `.claude/commands/*.md`. If a project
-uses pnpm, those patterns silently stop matching — nothing errors, you just get an approval prompt
-for every command until you give up on the allow-list. Init rewrites them; if you're hand-filling,
-do it yourself.
+| File | Role |
+|---|---|
+| `GateService` | AccessibilityService. On `TYPE_WINDOW_STATE_CHANGED`, asks `RuleStore.blockReason(pkg)`; if blocked, `GLOBAL_ACTION_HOME` then launches `BlockedActivity`. A 30 s recheck catches an app left open past closing time. Ignores systemui and the current keyboard. |
+| `RuleStore` | SharedPreferences: video package set, weekday and weekend windows, parent override expiry, Settings session expiry. Owns the single allow/block decision. |
+| `Schedule` / `TimeWindow` | Pure logic: is-open and next-opening. Unit tested. |
+| `PinManager` / `LockoutPolicy` | Salted PBKDF2WithHmacSHA1 (20k iterations) PIN hash; lockout 1, 5, then 15 min after 5, 6, 7+ wrong tries. Policy unit tested. |
+| `PinActivity` | Launcher. Create PIN (enter twice) or verify, then opens settings. |
+| `SettingsActivity` | Not exported; finishes in `onStop` so leaving it re-locks. Setup buttons, app picker dialog, time windows, 30-min override, 5-min Settings pass, change PIN, lock. |
+| `BlockedActivity` | Shows when videos reopen ("today at 3:00 PM", "tomorrow", weekday name), or that Settings is locked. |
+| `AdminReceiver` | Device admin with no policies; exists only to block uninstall. |
 
-## Changing the template
+Why it is built this way (accessibility service over polling, no overlay, no Device Owner, all of
+Settings locked) is in `DECISIONS.md`.
 
-Fixes belong here, not in the project that found them. When a project adds a line under **Pinned
-preferences** in its `CLAUDE.md` and that correction would apply anywhere, port it back and note the
-originating project in the commit body.
+## Set up a tablet
 
-Re-audit periodically: point the audit prompt at projects started *from* this template and diff the
-`CLAUDE.md`, `.claude/`, and friction-log sections. Anything that drifted is either a gap in the
-template or a rule nobody actually follows — both are worth knowing.
+1. **Allow sideloading.** Fire: Settings > Security & Privacy > Apps from Unknown Sources. Android: allow installs from the source you use (Files, adb needs nothing).
+2. **Install the APK** and open AppGate.
+3. **Create the parent PIN.** Nothing is blocked until a PIN exists.
+4. **Turn on blocker.** This opens Accessibility settings; enable "AppGate video schedule".
+   - Android 13+ only: if the switch is greyed out ("restricted setting"), go to Settings > Apps > AppGate > ⋮ > Allow restricted settings, then try again.
+5. **Turn on uninstall protection** (device admin).
+6. **Choose video apps** and set the allowed hours.
+7. **Lock and close.**
+
+On Fire, if the kids use a separate profile, install and set up AppGate inside that profile. Accessibility services are per user.
+
+## Forgot the PIN
+
+```
+adb shell pm clear com.alteon.appgate
+```
+
+This wipes the PIN and all rules. Then redo setup.

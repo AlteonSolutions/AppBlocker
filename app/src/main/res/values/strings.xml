@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AppGate</string>
+    <string name="service_label">AppGate video schedule</string>
+    <string name="service_description">Closes video apps outside the hours a parent sets, and locks Settings without the parent PIN.</string>
+
+    <string name="pin_enter">Enter parent PIN</string>
+    <string name="pin_create">Create a parent PIN</string>
+    <string name="pin_confirm">Enter the PIN again</string>
+    <string name="pin_submit">Continue</string>
+    <string name="pin_hint">PIN</string>
+    <string name="pin_wrong">Wrong PIN.</string>
+    <string name="pin_mismatch">Those didn\'t match. Start over.</string>
+    <string name="pin_too_short">Use at least %1$d digits.</string>
+    <plurals name="pin_locked_out">
+        <item quantity="one">Too many tries. Try again in %1$d minute.</item>
+        <item quantity="other">Too many tries. Try again in %1$d minutes.</item>
+    </plurals>
+
+    <string name="blocked_videos_title">Videos are closed right now</string>
+    <string name="blocked_videos_today">They open again today at %1$s.</string>
+    <string name="blocked_videos_tomorrow">They open again tomorrow at %1$s.</string>
+    <string name="blocked_videos_day">They open again %1$s at %2$s.</string>
+    <string name="blocked_videos_off">Ask a parent when they\'ll be open.</string>
+    <string name="blocked_settings_title">Settings is locked</string>
+    <string name="blocked_settings_message">Ask a parent for help.</string>
+    <string name="blocked_ok">OK</string>
+
+    <string name="section_setup">Setup</string>
+    <string name="status_line">Blocker: %1$s · Uninstall protection: %2$s</string>
+    <string name="on">on</string>
+    <string name="off">off</string>
+    <string name="enable_service">Turn on blocker</string>
+    <string name="enable_admin">Turn on uninstall protection</string>
+    <string name="admin_explanation">Keeps AppGate from being uninstalled without the parent PIN.</string>
+    <string name="admin_disable_warning">Turning this off lets AppGate be uninstalled.</string>
+
+    <string name="section_apps">Video apps</string>
+    <string name="pick_apps_button">Choose video apps (%1$d selected)</string>
+    <string name="pick_apps_title">Video apps</string>
+    <string name="save">Save</string>
+
+    <string name="section_hours">Allowed hours</string>
+    <string name="weekdays">Monday to Friday</string>
+    <string name="weekends">Saturday and Sunday</string>
+    <string name="window_start">From %1$s</string>
+    <string name="window_end">Until %1$s</string>
+    <string name="window_invalid">The end time has to be after the start time.</string>
+
+    <string name="section_parent">Parent tools</string>
+    <string name="override_start">Allow videos for %1$d minutes</string>
+    <string name="override_end">End video override (running until %1$s)</string>
+    <string name="open_settings">Open Android Settings (5 minutes)</string>
+    <string name="change_pin">Change PIN</string>
+    <string name="lock_now">Lock and close</string>
+</resources>
