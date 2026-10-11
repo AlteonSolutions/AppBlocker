@@ -8,12 +8,15 @@ import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.format.DateFormat
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import java.util.Calendar
@@ -48,6 +51,7 @@ class SettingsActivity : Activity() {
             startActivity(Intent(Settings.ACTION_SETTINGS))
         }
         button(R.id.updateButton).setOnClickListener { downloadLatest() }
+        button(R.id.pairPhoneButton).setOnClickListener { showPairing() }
         button(R.id.changePinButton).setOnClickListener {
             startActivity(PinActivity.resetIntent(this))
             finish()
@@ -89,6 +93,9 @@ class SettingsActivity : Activity() {
 
         val now = System.currentTimeMillis()
         button(R.id.updateButton).text = getString(R.string.update_app, installedVersion())
+        button(R.id.pairPhoneButton).setText(
+            if (rules.pairing != null) R.string.pair_phone_paired else R.string.pair_phone
+        )
 
         button(R.id.overrideButton).text = if (now < rules.overrideUntil) {
             getString(R.string.override_end, formatTime(rules.overrideUntil))
@@ -190,8 +197,50 @@ class SettingsActivity : Activity() {
         }
     }
 
-    private fun installedVersion(): String =
-        runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "?"
+    private fun installedVersion(): String = RemoteListener.installedVersion(this)
+
+    /** Shows the code the parent types into AppGate on their phone, creating one if needed. */
+    private fun showPairing() {
+        val pairing = rules.pairing ?: RemoteProtocol.parseCode(RemoteProtocol.newPairingCode())!!
+            .also { rules.pairing = it }
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val name = EditText(this).apply {
+            setHint(R.string.pair_name_hint)
+            setText(rules.tabletName)
+            setSingleLine()
+        }
+        val code = TextView(this).apply {
+            text = pairing.code
+            textSize = 22f
+            typeface = Typeface.MONOSPACE
+            setTextIsSelectable(true)
+            setPadding(0, pad / 2, 0, pad / 2)
+        }
+        val body = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0)
+            addView(TextView(this@SettingsActivity).apply { setText(R.string.pair_instructions) })
+            addView(code)
+            addView(name)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.pair_title)
+            .setView(body)
+            .setPositiveButton(R.string.pair_done) { _, _ ->
+                if (name.text.isNotBlank()) rules.tabletName = name.text.toString()
+                refresh()
+            }
+            .setNeutralButton(R.string.pair_new_code) { _, _ ->
+                rules.pairing = RemoteProtocol.parseCode(RemoteProtocol.newPairingCode())
+                Toast.makeText(this, R.string.pair_new_code_warning, Toast.LENGTH_LONG).show()
+                showPairing()
+            }
+            .setNegativeButton(R.string.pair_unpair) { _, _ ->
+                rules.pairing = null
+                refresh()
+            }
+            .show()
+    }
 
     private fun requestDeviceAdmin() {
         rules.startSettingsSession()

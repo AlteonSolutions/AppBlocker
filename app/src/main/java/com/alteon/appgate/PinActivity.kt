@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
@@ -28,6 +29,11 @@ class PinActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val rules = RuleStore(this)
+        if (rules.isParentPhone) {
+            openParentControls()
+            return
+        }
         setContentView(R.layout.activity_pin)
         pins = PinManager(this)
         title = findViewById(R.id.pinTitle)
@@ -38,6 +44,14 @@ class PinActivity : Activity() {
         mode = if (!pins.isSet || intent.getBooleanExtra(EXTRA_RESET, false)) Mode.CREATE else Mode.VERIFY
 
         submit.setOnClickListener { onSubmit() }
+        // Offered only on a device's very first launch: a phone never gets a PIN or blocks anything.
+        findViewById<Button>(R.id.parentPhoneButton).apply {
+            visibility = if (!pins.isSet && !intent.getBooleanExtra(EXTRA_RESET, false)) View.VISIBLE else View.GONE
+            setOnClickListener {
+                rules.isParentPhone = true
+                openParentControls()
+            }
+        }
         input.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) { onSubmit(); true } else false
         }
@@ -107,6 +121,11 @@ class PinActivity : Activity() {
             input.isEnabled = true
             error.text = ""
         }, (until - System.currentTimeMillis()).coerceAtLeast(0L))
+    }
+
+    private fun openParentControls() {
+        startActivity(Intent(this, ParentActivity::class.java))
+        finish()
     }
 
     private fun openSettings() {

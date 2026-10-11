@@ -16,7 +16,11 @@ _Last updated 2026-10-08._
   **Download latest AppGate** under Parent tools, so Obtainium is no longer needed.
 - On a Kindle Fire, 0.1.0 blocked apps with only a flicker and never showed the blocked screen.
   0.2.1 shows the blocked screen first and goes home when it is dismissed.
-- **Not yet verified on a device:** the 0.2.1 blocked screen, and the download-and-update flow.
+- 0.3.0 adds remote control from the parent's Android phone through ntfy: pairing, "Ask a parent"
+  with 15/30/60-minute buttons, and phone-side controls for video time, hours and the Settings lock.
+  The protocol is unit tested; ntfy itself could not be reached from the build environment.
+- **Not yet verified on a device:** the blocked screen, the download-and-update flow, and the whole
+  remote-control round trip (pairing, requests, commands, status).
 
 ## Next
 

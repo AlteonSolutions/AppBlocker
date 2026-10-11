@@ -37,4 +37,22 @@
         android:layout_marginTop="32dp"
         android:text="@string/blocked_ok"
         android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/askButton"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/ask_parent"
+        android:textSize="18sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/askStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:textColor="@color/muted"
+        android:textSize="16sp" />
 </LinearLayout>

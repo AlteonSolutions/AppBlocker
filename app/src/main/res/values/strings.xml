@@ -55,4 +55,56 @@
     <string name="update_no_browser">No web browser could open the download. Turn the browser on, then try again.</string>
     <string name="change_pin">Change PIN</string>
     <string name="lock_now">Lock and close</string>
+
+    <!-- Remote control: tablet side -->
+    <string name="section_phone">Parent phone</string>
+    <string name="pair_phone">Pair a parent phone</string>
+    <string name="pair_phone_paired">Paired with a parent phone (show code)</string>
+    <string name="pair_title">Pair a parent phone</string>
+    <string name="pair_instructions">On your phone, open AppGate, tap Pair a tablet, and enter this code. Give this tablet a name for your notifications.</string>
+    <string name="pair_name_hint">Tablet name, e.g. Emma\'s tablet</string>
+    <string name="pair_done">Done</string>
+    <string name="pair_new_code">New code</string>
+    <string name="pair_unpair">Unpair</string>
+    <string name="pair_new_code_warning">The old code stops working. Pair your phone again with the new one.</string>
+    <string name="ask_parent">Ask a parent</string>
+    <string name="ask_sent">Asked! When a parent says yes, open the app again.</string>
+    <string name="ask_too_soon">Already asked. Give a parent a few minutes.</string>
+    <string name="ask_failed">Couldn\'t reach the internet. Ask a parent in person.</string>
+    <string name="remote_request_title">%1$s wants videos</string>
+    <string name="remote_request_message">Tap how long to allow. Ignore this to say no.</string>
+    <string name="remote_allow_minutes">%1$d min</string>
+
+    <!-- Remote control: parent phone side -->
+    <string name="parent_phone_button">This is the parent\'s phone</string>
+    <string name="parent_title">Parent controls</string>
+    <string name="parent_no_tablets">No tablets yet. On each tablet, open AppGate, enter the PIN, and tap Pair a parent phone under Parent phone.</string>
+    <string name="parent_tablet">Tablet: %1$s (change)</string>
+    <string name="parent_pair_tablet">Pair a tablet</string>
+    <string name="parent_pair_title">Pair a tablet</string>
+    <string name="parent_code_hint">Pairing code from the tablet</string>
+    <string name="parent_name_hint">Name, e.g. Emma\'s tablet</string>
+    <string name="parent_code_invalid">That code isn\'t complete. It has 26 letters and numbers.</string>
+    <string name="parent_remove_tablet">Remove this tablet</string>
+    <string name="parent_section_time">Video time</string>
+    <string name="parent_end_allow">End video time now</string>
+    <string name="parent_section_hours">Allowed hours</string>
+    <string name="parent_section_tablet">Tablet</string>
+    <string name="parent_refresh">Refresh</string>
+    <string name="parent_lock_settings">Lock Android Settings now</string>
+    <string name="parent_alerts">Get requests from this tablet</string>
+    <string name="parent_alerts_title">Get requests in ntfy</string>
+    <string name="parent_alerts_message">Requests from this tablet arrive through the free ntfy app. Install ntfy from the Play Store, then tap Open in ntfy. If ntfy doesn\'t open, add this topic in ntfy by hand:\n\n%1$s</string>
+    <string name="parent_alerts_open">Open in ntfy</string>
+    <string name="parent_alerts_store">Get ntfy</string>
+    <string name="parent_switch_role">Use this device as a kid\'s tablet instead</string>
+    <string name="parent_status_waiting">Checking the tablet…</string>
+    <string name="parent_status_none">The tablet didn\'t answer. It needs to be on, on Wi-Fi, with the blocker turned on.</string>
+    <string name="parent_status_allowed">Videos allowed until %1$s</string>
+    <string name="parent_status_schedule">Hours apply now (no extra video time)</string>
+    <string name="parent_status_detail">Weekdays: %1$s · Weekends: %2$s · %3$d video apps · AppGate %4$s · checked %5$s</string>
+    <string name="parent_window_off">off</string>
+    <string name="parent_window_range">%1$s to %2$s</string>
+    <string name="parent_sent">Sent. Updating…</string>
+    <string name="parent_send_failed">Couldn\'t send. Check your phone\'s internet connection.</string>
 </resources>

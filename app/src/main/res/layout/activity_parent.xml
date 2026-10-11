@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <Button android:id="@+id/parentTabletButton" style="@style/RowButton" />
+        <TextView
+            android:id="@+id/parentStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:id="@+id/parentControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView style="@style/Section" android:text="@string/parent_section_time" />
+            <LinearLayout style="@style/TimeRow">
+                <Button android:id="@+id/parentAllow15" style="@style/TimeButton" />
+                <Button android:id="@+id/parentAllow30" style="@style/TimeButton" />
+                <Button android:id="@+id/parentAllow60" style="@style/TimeButton" />
+            </LinearLayout>
+            <Button android:id="@+id/parentEndAllow" style="@style/RowButton" android:text="@string/parent_end_allow" />
+
+            <TextView style="@style/Section" android:text="@string/parent_section_hours" />
+            <CheckBox
+                android:id="@+id/parentWeekdayEnabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/weekdays" />
+            <LinearLayout style="@style/TimeRow">
+                <Button android:id="@+id/parentWeekdayStart" style="@style/TimeButton" />
+                <Button android:id="@+id/parentWeekdayEnd" style="@style/TimeButton" />
+            </LinearLayout>
+            <CheckBox
+                android:id="@+id/parentWeekendEnabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/weekends" />
+            <LinearLayout style="@style/TimeRow">
+                <Button android:id="@+id/parentWeekendStart" style="@style/TimeButton" />
+                <Button android:id="@+id/parentWeekendEnd" style="@style/TimeButton" />
+            </LinearLayout>
+
+            <TextView style="@style/Section" android:text="@string/parent_section_tablet" />
+            <Button android:id="@+id/parentRefresh" style="@style/RowButton" android:text="@string/parent_refresh" />
+            <Button android:id="@+id/parentLockSettings" style="@style/RowButton" android:text="@string/parent_lock_settings" />
+            <Button android:id="@+id/parentAlerts" style="@style/RowButton" android:text="@string/parent_alerts" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/parentSwitchRole"
+            style="@style/RowButton"
+            android:layout_marginTop="32dp"
+            android:text="@string/parent_switch_role" />
+    </LinearLayout>
+</ScrollView>

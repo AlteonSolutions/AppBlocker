@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import java.util.Calendar
@@ -16,6 +17,7 @@ class BlockedActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_blocked)
         findViewById<Button>(R.id.okButton).setOnClickListener { goHome() }
+        findViewById<Button>(R.id.askButton).setOnClickListener { askParent() }
         render(intent)
     }
 
@@ -32,6 +34,25 @@ class BlockedActivity : Activity() {
     override fun onStop() {
         super.onStop()
         finish()
+    }
+
+    private fun askParent() {
+        val button = findViewById<Button>(R.id.askButton)
+        val status = findViewById<TextView>(R.id.askStatus)
+        button.isEnabled = false
+        Thread {
+            val result = RemoteListener.askParent(applicationContext)
+            runOnUiThread {
+                status.setText(
+                    when (result) {
+                        RemoteListener.AskResult.SENT -> R.string.ask_sent
+                        RemoteListener.AskResult.TOO_SOON -> R.string.ask_too_soon
+                        RemoteListener.AskResult.NOT_PAIRED, RemoteListener.AskResult.FAILED -> R.string.ask_failed
+                    }
+                )
+                button.isEnabled = result == RemoteListener.AskResult.FAILED
+            }
+        }.start()
     }
 
     private fun goHome() {
@@ -59,6 +80,13 @@ class BlockedActivity : Activity() {
                 message.text = nextOpeningText()
             }
         }
+        // Asking only makes sense for videos, and only once a parent phone is paired.
+        val canAsk = reason == BlockReason.VIDEOS_CLOSED && RuleStore(this).pairing != null
+        findViewById<Button>(R.id.askButton).apply {
+            visibility = if (canAsk) View.VISIBLE else View.GONE
+            isEnabled = true
+        }
+        findViewById<TextView>(R.id.askStatus).text = ""
     }
 
     private fun nextOpeningText(): String {

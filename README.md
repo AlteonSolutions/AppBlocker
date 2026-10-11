@@ -76,6 +76,10 @@ Zero runtime dependencies: framework classes only, no AndroidX, no Play Services
 | `SettingsActivity` | Not exported; finishes in `onStop` so leaving it re-locks. Setup buttons, app picker dialog, time windows, 30-min override, 5-min Settings pass, change PIN, lock. |
 | `BlockedActivity` | Shows when videos reopen ("today at 3:00 PM", "tomorrow", weekday name), or that Settings is locked. |
 | `AdminReceiver` | Device admin with no policies; exists only to block uninstall. |
+| `RemoteProtocol` | Pure logic for remote control: pairing codes, signed commands, request approvals, replay and freshness checks, ntfy JSON. Unit tested. |
+| `NtfyClient` | Publish, stream and poll ntfy topics over plain HTTPS (`java.net`). |
+| `RemoteListener` | Tablet side, inside `GateService`: holds the command subscription open, applies what `RemoteProtocol` accepts, reports status, sends "Ask a parent". |
+| `ParentActivity` | Parent controls on the parent's phone: grant 15/30/60 min, end it, edit hours, lock Settings, pair tablets. |
 
 Why it is built this way (accessibility service over polling, no overlay, no Device Owner, all of
 Settings locked) is in `DECISIONS.md`.
@@ -93,6 +97,26 @@ Settings locked) is in `DECISIONS.md`.
 7. **Lock and close.**
 
 On Fire, if the kids use a separate profile, install and set up AppGate inside that profile. Accessibility services are per user.
+
+## Parent phone (remote control)
+
+The same APK runs on the parent's Android phone. Requests and commands travel through
+[ntfy](https://ntfy.sh), a free notification relay; the tablet needs Wi-Fi, and the PIN keeps working
+without it.
+
+1. **Phone:** install AppGate from the link above and, on its first screen, tap **This is the parent's
+   phone**. Install the free **ntfy** app from the Play Store too.
+2. **Tablet:** open AppGate, enter the PIN, tap **Pair a parent phone** under Parent phone. Give the
+   tablet a name and leave the code on screen.
+3. **Phone:** tap **Pair a tablet**, type the code and the name, then tap **Open in ntfy** so ntfy
+   subscribes to that tablet's requests.
+
+Then:
+- On the blocked screen, a kid taps **Ask a parent**. The phone shows "<tablet> wants videos" with
+  **15 min**, **30 min** and **60 min** buttons. Ignoring it means no (Android allows three buttons).
+- In AppGate on the phone: allow 15/30/60 minutes, end video time, change weekday and weekend hours,
+  lock Android Settings, and see the tablet's current settings. Video apps are still chosen on the tablet.
+- **New code** on the tablet unpairs every phone; pair again with the new code.
 
 ## Forgot the PIN
 

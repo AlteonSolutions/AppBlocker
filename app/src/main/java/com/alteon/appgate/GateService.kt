@@ -14,6 +14,7 @@ import android.view.accessibility.AccessibilityEvent
 class GateService : AccessibilityService() {
 
     private val rules by lazy { RuleStore(this) }
+    private val remote by lazy { RemoteListener(this) }
     private val handler = Handler(Looper.getMainLooper())
     private var foregroundPkg: String? = null
 
@@ -27,6 +28,8 @@ class GateService : AccessibilityService() {
     override fun onServiceConnected() {
         handler.removeCallbacks(recheck)
         handler.postDelayed(recheck, RECHECK_MS)
+        // Remote control rides on this service because it is the one part of AppGate always running.
+        remote.start()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -61,6 +64,7 @@ class GateService : AccessibilityService() {
 
     override fun onDestroy() {
         handler.removeCallbacks(recheck)
+        remote.stop()
         super.onDestroy()
     }
 
