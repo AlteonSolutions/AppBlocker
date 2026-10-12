@@ -19,8 +19,11 @@ _Last updated 2026-10-08._
 - 0.3.0 adds remote control from the parent's Android phone through ntfy: pairing, "Ask a parent"
   with 15/30/60-minute buttons, and phone-side controls for video time, hours and the Settings lock.
   The protocol is unit tested; ntfy itself could not be reached from the build environment.
+- 0.4.0: unlocking AppGate on a paired tablet asks the parent's phone first, with the PIN as backup;
+  the recheck and remote connection pause while the screen is off; popups no longer hide a video
+  playing underneath from the 30 s recheck.
 - **Not yet verified on a device:** the blocked screen, the download-and-update flow, and the whole
-  remote-control round trip (pairing, requests, commands, status).
+  remote-control round trip (pairing, requests, unlock, commands, status).
 
 ## Next
 

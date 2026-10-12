@@ -13,6 +13,24 @@ old one. Entry format:
 
 ---
 
+### 2026-10-12 – Unlock AppGate's settings from the parent's phone, with the PIN as backup
+**Context.** The parent wants getting into AppGate's settings on a tablet to need their phone's approval, with the PIN only as a fallback.
+**Decision.** On a paired tablet, the PIN screen leads with **Ask my phone to unlock**. It publishes an ntfy notification with one **Unlock settings** button, which posts `unlock|<nonce>` back. The PIN screen waits up to 3 minutes on the command topic for that nonce, then opens settings. **Use PIN instead** reveals the PIN entry. The background listener never acts on unlock messages, so an approval opens settings only on the screen that asked.
+**Rejected.** Removing the PIN: no Wi-Fi or no phone would lock the parent out. A signed approval from the phone app: it would need AppGate on the phone to receive notifications in the background.
+**Consequence.** Like video approvals, an unlock approval is unsigned and trusts the request nonce, so anyone reading the request topic could approve that one open request. Topic names stay secret. PIN lockouts don't apply to phone unlocks. Supersedes: none.
+
+### 2026-10-12 – Pause the recheck and the remote connection while the screen is off
+**Context.** The 30 s recheck and the held ntfy connection ran whether or not anyone was using the tablet. The connection's keepalives can wake a sleeping tablet's Wi-Fi.
+**Decision.** `GateService` stops both on `ACTION_SCREEN_OFF`. On `ACTION_SCREEN_ON` it rechecks at once (hours or a grant may have ended meanwhile) and reconnects. `RemoteListener` uses a generation counter, so a stopped connection still blocked in a read can't run beside the new one.
+**Rejected.** Keeping the connection open to receive grants sent while the tablet sleeps: those would mostly arrive stale anyway, past the 10-minute window.
+**Consequence.** A command sent while the tablet's screen is off is missed, and the phone shows that the tablet didn't answer. A sleeping tablet does no AppGate work. Supersedes: none.
+
+### 2026-10-12 – Count only activity windows as the app in front
+**Context.** `GateService` remembered the package of the last window-state event as the app in front. A volume panel, dialog or overlay from another package replaced it, so the 30 s recheck stopped checking the video still playing underneath.
+**Decision.** Only events whose class name is an activity of that package (looked up once with `PackageManager.getActivityInfo`, then cached) update the app in front. Every event is still checked for blocking.
+**Rejected.** Reading the active window with `canRetrieveWindowContent`: it makes Android warn that AppGate can read the screen, for no other gain.
+**Consequence.** An app's own popups no longer count as a switch. If a launcher shows its home screen without an activity event, the old app stays remembered until the next real switch. Supersedes: none.
+
 ### 2026-10-11 – Control tablets from the parent's phone through ntfy, signed with a pairing code
 **Context.** The parent wants to grant video time (15, 30 or 60 minutes) and change settings from their Android phone, without walking to the tablet and typing the PIN, and to get a notification when a kid asks.
 **Decision.** The same APK runs on the phone in parent mode, chosen on first launch. Each tablet shows a 26-character pairing code (128 bits) that the parent types into the phone once. Topics on ntfy.sh and an HMAC-SHA256 key are derived from it. Phone commands (allow, end, set hours, lock Settings, send status) are signed, timestamped and nonce'd. The tablet rejects bad signatures, anything older than 10 minutes, and repeated nonces, because ntfy caches and replays messages for 12 hours. "Ask a parent" on the blocked screen publishes an ntfy notification whose three buttons post an approval for that request's random nonce straight back to the tablet. The ntfy app delivers it, so AppGate on the phone needs no background service. The tablet's half runs inside `GateService`, the one part always running, over plain `java.net` HTTPS, so there is still no dependency. The PIN stays the fallback.

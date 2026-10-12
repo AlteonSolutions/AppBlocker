@@ -75,6 +75,17 @@
     <string name="remote_request_message">Tap how long to allow. Ignore this to say no.</string>
     <string name="remote_allow_minutes">%1$d min</string>
 
+    <string name="unlock_title">Unlock AppGate settings</string>
+    <string name="unlock_ask">Ask my phone to unlock</string>
+    <string name="unlock_use_pin">Use PIN instead</string>
+    <string name="unlock_asking">Asking your phone…</string>
+    <string name="unlock_waiting">Tap Unlock settings in the notification on your phone.</string>
+    <string name="unlock_no_answer">No answer from your phone. Ask again, or use the PIN.</string>
+    <string name="unlock_failed">Couldn\'t reach the internet. Use the PIN instead.</string>
+    <string name="remote_unlock_title">%1$s: open AppGate settings?</string>
+    <string name="remote_unlock_message">Someone is opening AppGate\'s settings on this tablet. Ignore this if it isn\'t you.</string>
+    <string name="remote_unlock_button">Unlock settings</string>
+
     <!-- Remote control: parent phone side -->
     <string name="parent_phone_button">This is the parent\'s phone</string>
     <string name="parent_title">Parent controls</string>

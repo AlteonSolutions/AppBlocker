@@ -16,31 +16,41 @@ class RemoteListener(context: Context) {
 
     private val appContext = context.applicationContext
     private val rules = RuleStore(appContext)
+    /**
+     * Bumped by every start and stop. A loop runs only while the generation it started with is
+     * current. The screen turning off and on stops and restarts the listener, and an old loop still
+     * blocked in a read must not carry on beside the new one.
+     */
+    @Volatile private var generation = 0
     @Volatile private var running = false
     private var thread: Thread? = null
 
     fun start() {
         if (running) return
         running = true
-        thread = Thread(::loop, "AppGate remote").apply {
+        val gen = ++generation
+        thread = Thread({ loop(gen) }, "AppGate remote").apply {
             isDaemon = true
             start()
         }
     }
 
-    /** The open read ends within STREAM_READ_TIMEOUT_MS at worst; the thread is a daemon either way. */
+    /** The open read ends within NtfyClient's stream timeout at worst; the thread is a daemon. */
     fun stop() {
         running = false
+        generation++
         thread?.interrupt()
         thread = null
     }
 
-    private fun loop() {
+    private fun current(gen: Int) = running && generation == gen
+
+    private fun loop(gen: Int) {
         var backoffMs = MIN_BACKOFF_MS
-        while (running) {
+        while (current(gen)) {
             val pairing = rules.pairing
             if (pairing == null) {
-                if (!pause(UNPAIRED_CHECK_MS)) return
+                if (!pause(UNPAIRED_CHECK_MS, gen)) return
                 continue
             }
             val code = pairing.code
@@ -49,17 +59,17 @@ class RemoteListener(context: Context) {
                     pairing.commandTopic,
                     since = rules.lastRemoteMessageId ?: FIRST_CONNECT_SINCE,
                     // Re-pairing changes the topic, so drop this connection and open the new one.
-                    keepGoing = { running && rules.pairing?.code == code },
+                    keepGoing = { current(gen) && rules.pairing?.code == code },
                 ) { line ->
                     backoffMs = MIN_BACKOFF_MS
-                    handle(pairing, line)
+                    if (current(gen)) handle(pairing, line)
                 }
             } catch (e: IOException) {
                 Log.w(TAG, "remote connection dropped; retrying in ${backoffMs / 1000} s", e)
             } catch (e: RuntimeException) {
                 Log.w(TAG, "remote listener error; retrying in ${backoffMs / 1000} s", e)
             }
-            if (!pause(backoffMs)) return
+            if (!pause(backoffMs, gen)) return
             backoffMs = minOf(backoffMs * 2, MAX_BACKOFF_MS)
         }
     }
@@ -101,9 +111,9 @@ class RemoteListener(context: Context) {
     }
 
     /** False if the listener was stopped while waiting. */
-    private fun pause(ms: Long): Boolean = try {
+    private fun pause(ms: Long, gen: Int): Boolean = try {
         Thread.sleep(ms)
-        running
+        current(gen)
     } catch (e: InterruptedException) {
         false
     }
@@ -145,6 +155,60 @@ class RemoteListener(context: Context) {
                 AskResult.FAILED
             }
         }
+
+        /**
+         * Asks the parent's phone to unlock AppGate's settings on this tablet. Returns the request's
+         * nonce, which the waiting PIN screen matches against the approval, or null if not paired or
+         * not sent. Blocking: call off the main thread.
+         */
+        fun askUnlock(context: Context, now: Long): String? {
+            val rules = RuleStore(context)
+            val pairing = rules.pairing ?: return null
+            val nonce = RemoteProtocol.newNonce()
+            val json = RemoteProtocol.unlockNotificationJson(
+                pairing,
+                nonce,
+                title = context.getString(R.string.remote_unlock_title, rules.tabletName),
+                message = context.getString(R.string.remote_unlock_message),
+                button = context.getString(R.string.remote_unlock_button),
+            )
+            return try {
+                NtfyClient.publishJson(json)
+                nonce
+            } catch (e: IOException) {
+                Log.w(TAG, "unlock request failed", e)
+                null
+            }
+        }
+
+        /**
+         * Waits for the parent to tap "Unlock settings" for [nonce], until [maxWaitMs] passes or
+         * [keepWaiting] turns false. Blocking: call off the main thread.
+         */
+        fun awaitUnlock(context: Context, nonce: String, askedAt: Long, maxWaitMs: Long, keepWaiting: () -> Boolean): Boolean {
+            val pairing = RuleStore(context).pairing ?: return false
+            var approved = false
+            fun waiting() = !approved && keepWaiting() && System.currentTimeMillis() - askedAt < maxWaitMs
+            // Unix seconds, a second early: ntfy's "since" has one-second precision.
+            val since = (askedAt / 1000 - 1).toString()
+            while (waiting()) {
+                try {
+                    NtfyClient.stream(pairing.commandTopic, since, keepGoing = ::waiting) { line ->
+                        if (RemoteProtocol.jsonStringField(line, "event") != "message") return@stream
+                        val message = RemoteProtocol.jsonStringField(line, "message") ?: return@stream
+                        if (RemoteProtocol.isUnlockApproval(message, nonce, askedAt, System.currentTimeMillis())) {
+                            approved = true
+                        }
+                    }
+                } catch (e: IOException) {
+                    Log.w(TAG, "waiting for unlock: connection dropped", e)
+                    if (waiting()) Thread.sleep(UNLOCK_RETRY_MS)
+                }
+            }
+            return approved
+        }
+
+        private const val UNLOCK_RETRY_MS = 3_000L
 
         /** Tells the parent's phone the tablet's current settings. Failure is logged, never thrown. */
         fun publishStatus(context: Context, pairing: RemoteProtocol.Pairing) {

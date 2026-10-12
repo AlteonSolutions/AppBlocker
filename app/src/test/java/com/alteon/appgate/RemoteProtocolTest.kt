@@ -3,6 +3,7 @@ package com.alteon.appgate
 import com.alteon.appgate.RemoteProtocol.Command
 import com.alteon.appgate.RemoteProtocol.Incoming
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -145,6 +146,34 @@ class RemoteProtocolTest {
         assertTrue(json.contains("\"topic\":\"${pairing.requestTopic}\""))
         assertTrue(json.contains("${RemoteProtocol.SERVER}/${pairing.commandTopic}"))
         assertTrue(json.contains("Emma's \\\"tab\\\""))
+    }
+
+    // ---- Unlocking settings ----
+
+    @Test fun unlockApprovalForThisRequestIsAccepted() {
+        val body = RemoteProtocol.unlockBody("u1")
+        assertTrue(RemoteProtocol.isUnlockApproval(body, "u1", requestedAt = now - 60_000L, now = now))
+    }
+
+    @Test fun unlockApprovalForAnotherRequestOrTooLateIsRejected() {
+        val body = RemoteProtocol.unlockBody("u1")
+        assertFalse(RemoteProtocol.isUnlockApproval(body, "u2", now, now))
+        assertFalse(RemoteProtocol.isUnlockApproval(body, "u1", now - RemoteProtocol.MAX_AGE_MS - 1, now))
+    }
+
+    @Test fun videoApprovalDoesNotUnlockSettings() {
+        assertFalse(RemoteProtocol.isUnlockApproval(RemoteProtocol.approvalBody("u1", 60), "u1", now, now))
+    }
+
+    @Test fun unlockApprovalIsNeverObeyedAsACommand() {
+        val result = decode(RemoteProtocol.unlockBody("u1"), pending = "u1", pendingAt = now)
+        assertTrue(result is Incoming.Rejected)
+    }
+
+    @Test fun unlockNotificationHasOneButtonPostingThisRequest() {
+        val json = RemoteProtocol.unlockNotificationJson(pairing, "u1", "t", "m", "Unlock settings")
+        assertTrue(json.contains(RemoteProtocol.json(RemoteProtocol.unlockBody("u1"))))
+        assertEquals(1, Regex("\"action\":\"http\"").findAll(json).count())
     }
 
     // ---- Status ----

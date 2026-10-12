@@ -36,6 +36,7 @@ object RemoteProtocol {
     private const val CMD = "cmd1"
     private const val STATUS = "status1"
     private const val APPROVE = "approve"
+    private const val UNLOCK = "unlock"
     private const val SEP = '|'
 
     // ---- Pairing ----
@@ -137,6 +138,8 @@ object RemoteProtocol {
         return when (parts.firstOrNull()) {
             APPROVE -> decodeApproval(parts, now, pendingRequestNonce, pendingRequestAt)
             CMD -> decodeSigned(p, parts, now, seenNonces)
+            // Settings unlocks are answered to the waiting PIN screen, not to the listener.
+            UNLOCK -> Incoming.Rejected("settings unlock, handled by the PIN screen")
             else -> Incoming.Rejected("not an AppGate command")
         }
     }
@@ -245,14 +248,49 @@ object RemoteProtocol {
         title: String,
         message: String,
         buttonLabel: (Int) -> String,
+    ): String = notificationJson(
+        p, title, message, tag = "hourglass",
+        buttons = ALLOW_CHOICES.map { buttonLabel(it) to approvalBody(requestNonce, it) },
+    )
+
+    // ---- Unlocking AppGate's settings from the phone ----
+
+    /** The body the "Unlock settings" button posts back. */
+    fun unlockBody(requestNonce: String) = "$UNLOCK$SEP$requestNonce"
+
+    /**
+     * Whether [message] approves the PIN screen's open unlock request. Like video approvals it is
+     * unsigned and trusts the request's random nonce, which only the notification carried, and only
+     * while the request is fresh.
+     */
+    fun isUnlockApproval(message: String, requestNonce: String, requestedAt: Long, now: Long): Boolean {
+        val parts = message.trim().split(SEP)
+        return parts.size == 2 && parts[0] == UNLOCK && now - requestedAt <= MAX_AGE_MS &&
+            constantEquals(parts[1], requestNonce)
+    }
+
+    fun unlockNotificationJson(p: Pairing, requestNonce: String, title: String, message: String, button: String) =
+        notificationJson(p, title, message, tag = "key", buttons = listOf(button to unlockBody(requestNonce)))
+
+    /**
+     * JSON for ntfy's publish endpoint: a notification on the parent's phone whose buttons each post
+     * their body straight back to the tablet's command topic. At most three: Android's limit.
+     */
+    private fun notificationJson(
+        p: Pairing,
+        title: String,
+        message: String,
+        tag: String,
+        buttons: List<Pair<String, String>>,
     ): String {
-        val actions = ALLOW_CHOICES.joinToString(",") { minutes ->
-            """{"action":"http","label":${json(buttonLabel(minutes))},""" +
+        require(buttons.size in 1..3) { "Android notifications show one to three buttons" }
+        val actions = buttons.joinToString(",") { (label, body) ->
+            """{"action":"http","label":${json(label)},""" +
                 """"url":${json("$SERVER/${p.commandTopic}")},"method":"POST",""" +
-                """"body":${json(approvalBody(requestNonce, minutes))},"clear":true}"""
+                """"body":${json(body)},"clear":true}"""
         }
         return """{"topic":${json(p.requestTopic)},"title":${json(title)},""" +
-            """"message":${json(message)},"tags":["hourglass"],"priority":4,"actions":[$actions]}"""
+            """"message":${json(message)},"tags":[${json(tag)}],"priority":4,"actions":[$actions]}"""
     }
 
     // ---- ntfy's JSON stream ----

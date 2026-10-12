@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -26,6 +27,8 @@ class PinActivity : Activity() {
 
     private var mode = Mode.VERIFY
     private var firstEntry: String? = null
+    /** False once this screen is gone, so a pending wait for the phone stops. */
+    @Volatile private var alive = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +55,13 @@ class PinActivity : Activity() {
                 openParentControls()
             }
         }
+        findViewById<Button>(R.id.unlockButton).setOnClickListener { askPhoneToUnlock() }
+        findViewById<Button>(R.id.usePinButton).setOnClickListener { showPinEntry(true) }
+        // A paired tablet unlocks from the parent's phone first; the PIN is the backup.
+        val remoteFirst = mode == Mode.VERIFY && rules.pairing != null
+        findViewById<View>(R.id.unlockButton).visibility = if (remoteFirst) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.usePinButton).visibility = if (remoteFirst) View.VISIBLE else View.GONE
+        showPinEntry(!remoteFirst)
         input.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) { onSubmit(); true } else false
         }
@@ -65,14 +75,59 @@ class PinActivity : Activity() {
     }
 
     override fun onDestroy() {
+        alive = false
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
+    }
+
+    private fun showPinEntry(show: Boolean) {
+        val v = if (show) View.VISIBLE else View.GONE
+        input.visibility = v
+        submit.visibility = v
+        error.visibility = v
+        if (show) {
+            findViewById<View>(R.id.usePinButton).visibility = View.GONE
+            input.requestFocus()
+            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input, 0)
+        }
+        render()
+    }
+
+    private fun askPhoneToUnlock() {
+        val button = findViewById<Button>(R.id.unlockButton)
+        val status = findViewById<TextView>(R.id.unlockStatus)
+        button.isEnabled = false
+        status.visibility = View.VISIBLE
+        status.setText(R.string.unlock_asking)
+        Thread {
+            val askedAt = System.currentTimeMillis()
+            val nonce = RemoteListener.askUnlock(applicationContext, askedAt)
+            if (nonce == null) {
+                runOnUiThread {
+                    status.setText(R.string.unlock_failed)
+                    button.isEnabled = true
+                    showPinEntry(true)
+                }
+                return@Thread
+            }
+            runOnUiThread { status.setText(R.string.unlock_waiting) }
+            val approved = RemoteListener.awaitUnlock(applicationContext, nonce, askedAt, UNLOCK_WAIT_MS) { alive }
+            runOnUiThread {
+                if (!alive) return@runOnUiThread
+                if (approved) {
+                    openSettings()
+                } else {
+                    status.setText(R.string.unlock_no_answer)
+                    button.isEnabled = true
+                }
+            }
+        }.start()
     }
 
     private fun render() {
         title.setText(
             when (mode) {
-                Mode.VERIFY -> R.string.pin_enter
+                Mode.VERIFY -> if (input.visibility == View.VISIBLE) R.string.pin_enter else R.string.unlock_title
                 Mode.CREATE -> R.string.pin_create
                 Mode.CONFIRM -> R.string.pin_confirm
             }
@@ -135,6 +190,8 @@ class PinActivity : Activity() {
 
     companion object {
         private const val EXTRA_RESET = "reset"
+        /** Long enough to find the phone; the notification itself stays answerable for 10 minutes. */
+        private const val UNLOCK_WAIT_MS = 3 * 60_000L
 
         fun resetIntent(context: Context): Intent =
             Intent(context, PinActivity::class.java).putExtra(EXTRA_RESET, true)

@@ -68,11 +68,11 @@ Zero runtime dependencies: framework classes only, no AndroidX, no Play Services
 
 | File | Role |
 |---|---|
-| `GateService` | AccessibilityService. On `TYPE_WINDOW_STATE_CHANGED`, asks `RuleStore.blockReason(pkg)`; if blocked, launches `BlockedActivity` over it, which goes home when dismissed. A 30 s recheck catches an app left open past closing time. Ignores systemui and the current keyboard. |
+| `GateService` | AccessibilityService. On `TYPE_WINDOW_STATE_CHANGED`, asks `RuleStore.blockReason(pkg)`; if blocked, launches `BlockedActivity` over it, which goes home when dismissed. Only activity windows count as the app in front, so popups and overlays don't hide a video playing underneath. A 30 s recheck covers an app left open past closing time or past granted time. The recheck and the remote connection pause while the screen is off. Ignores systemui and the current keyboard. |
 | `RuleStore` | SharedPreferences: video package set, weekday and weekend windows, parent override expiry, Settings session expiry. Owns the single allow/block decision. |
 | `Schedule` / `TimeWindow` | Pure logic: is-open and next-opening. Unit tested. |
 | `PinManager` / `LockoutPolicy` | Salted PBKDF2WithHmacSHA1 (20k iterations) PIN hash; lockout 1, 5, then 15 min after 5, 6, 7+ wrong tries. Policy unit tested. |
-| `PinActivity` | Launcher. Create PIN (enter twice) or verify, then opens settings. |
+| `PinActivity` | Launcher. Create PIN (enter twice). On a paired tablet, unlocking asks the parent's phone first, with the PIN as backup. Then opens settings. |
 | `SettingsActivity` | Not exported; finishes in `onStop` so leaving it re-locks. Setup buttons, app picker dialog, time windows, 30-min override, 5-min Settings pass, change PIN, lock. |
 | `BlockedActivity` | Shows when videos reopen ("today at 3:00 PM", "tomorrow", weekday name), or that Settings is locked. |
 | `AdminReceiver` | Device admin with no policies; exists only to block uninstall. |
@@ -116,7 +116,12 @@ Then:
   **15 min**, **30 min** and **60 min** buttons. Ignoring it means no (Android allows three buttons).
 - In AppGate on the phone: allow 15/30/60 minutes, end video time, change weekday and weekend hours,
   lock Android Settings, and see the tablet's current settings. Video apps are still chosen on the tablet.
+- Opening AppGate on a paired tablet shows **Ask my phone to unlock**. The phone gets "<tablet>: open
+  AppGate settings?" with an **Unlock settings** button. **Use PIN instead** is the backup, for no
+  Wi-Fi or no phone nearby.
 - **New code** on the tablet unpairs every phone; pair again with the new code.
+- The tablet only listens while its screen is on. A command sent while it sleeps is missed (the phone
+  says the tablet didn't answer); send it again once the tablet is awake.
 
 ## Forgot the PIN
 
