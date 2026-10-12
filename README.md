@@ -68,9 +68,10 @@ Zero runtime dependencies: framework classes only, no AndroidX, no Play Services
 
 | File | Role |
 |---|---|
-| `GateService` | AccessibilityService. On `TYPE_WINDOW_STATE_CHANGED`, asks `RuleStore.blockReason(pkg)`; if blocked, launches `BlockedActivity` over it, which goes home when dismissed. Only activity windows count as the app in front, so popups and overlays don't hide a video playing underneath. A 30 s recheck covers an app left open past closing time or past granted time. The recheck and the remote connection pause while the screen is off. Ignores systemui and the current keyboard. |
+| `GateService` | AccessibilityService. On `TYPE_WINDOW_STATE_CHANGED`, asks `RuleStore.blockReason(pkg)`; if blocked, launches `BlockedActivity` over it, which goes home when dismissed. Only activity windows count as the app in front, so popups and overlays don't hide a video playing underneath. Nothing polls: one timer is set for the exact moment the app in front could become blocked (window closing, grant or Settings pass ending), and any rule change rechecks at once. The timer and the remote connection pause while the screen is off. Ignores systemui and the current keyboard. |
 | `RuleStore` | SharedPreferences: video package set, weekday and weekend windows, parent override expiry, Settings session expiry. Owns the single allow/block decision. |
-| `Schedule` / `TimeWindow` | Pure logic: is-open and next-opening. Unit tested. |
+| `Schedule` / `TimeWindow` | Pure logic: is-open, current closing and next-opening. Unit tested. |
+| `RecheckPolicy` | Pure logic: when the app in front could next become blocked. Unit tested. |
 | `PinManager` / `LockoutPolicy` | Salted PBKDF2WithHmacSHA1 (20k iterations) PIN hash; lockout 1, 5, then 15 min after 5, 6, 7+ wrong tries. Policy unit tested. |
 | `PinActivity` | Launcher. Create PIN (enter twice). On a paired tablet, unlocking asks the parent's phone first, with the PIN as backup. Then opens settings. |
 | `SettingsActivity` | Not exported; finishes in `onStop` so leaving it re-locks. Setup buttons, app picker dialog, time windows, 30-min override, 5-min Settings pass, change PIN, lock. |

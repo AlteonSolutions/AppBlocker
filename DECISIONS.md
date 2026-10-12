@@ -13,6 +13,12 @@ old one. Entry format:
 
 ---
 
+### 2026-10-12 – Recheck at the exact moment a rule can change, instead of every 30 s
+**Context.** Opening an app is already caught by Android's accessibility events. The 30 s recheck existed only for time running out while an app is open, yet it ran all day, allowed hours included, and still blocked up to 30 s late.
+**Decision.** `RecheckPolicy` gives the next moment the answer for the app in front could change on its own: the window closing or a grant ending for a video app, the pass ending for Settings, and never for other apps. `GateService` sets one timer for that moment, re-set on every app switch. Rule changes (`RuleStore.listenForRuleChanges`, so phone commands too) and clock or time-zone changes recheck at once. The screen-off pause stays.
+**Rejected.** A shorter or longer fixed interval: either more wasted work or later blocks. AlarmManager: the screen is on whenever this matters, so a main-thread timer is enough.
+**Consequence.** Blocking lands at the exact minute. With a non-video app in front, or a video app already blocked, AppGate does no timed work. Supersedes: 2026-10-08 (Bounce blocked apps home and show a full-screen activity), only its "30 s recheck" consequence.
+
 ### 2026-10-12 – Unlock AppGate's settings from the parent's phone, with the PIN as backup
 **Context.** The parent wants getting into AppGate's settings on a tablet to need their phone's approval, with the PIN only as a fallback.
 **Decision.** On a paired tablet, the PIN screen leads with **Ask my phone to unlock**. It publishes an ntfy notification with one **Unlock settings** button, which posts `unlock|<nonce>` back. The PIN screen waits up to 3 minutes on the command topic for that nonce, then opens settings. **Use PIN instead** reveals the PIN entry. The background listener never acts on unlock messages, so an approval opens settings only on the screen that asked.

@@ -22,6 +22,19 @@ data class Schedule(val weekday: TimeWindow, val weekend: TimeWindow) {
     fun isOpen(at: Calendar): Boolean =
         windowFor(at.get(Calendar.DAY_OF_WEEK)).contains(minuteOfDay(at))
 
+    /** When the window open at [at] closes, or null if videos are closed at [at]. */
+    fun currentClosing(at: Calendar): Calendar? {
+        val window = windowFor(at.get(Calendar.DAY_OF_WEEK))
+        if (!window.contains(minuteOfDay(at))) return null
+        // An end of 24:00 rolls over to midnight, which Calendar does by itself.
+        return (at.clone() as Calendar).apply {
+            set(Calendar.HOUR_OF_DAY, window.endMinute / 60)
+            set(Calendar.MINUTE, window.endMinute % 60)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+    }
+
     /** The next moment a window opens strictly after [from], or null if no window is usable. */
     fun nextOpening(from: Calendar): Calendar? {
         for (offset in 0..7) {

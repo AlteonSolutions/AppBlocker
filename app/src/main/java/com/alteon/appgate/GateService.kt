@@ -17,9 +17,10 @@ import android.view.accessibility.AccessibilityEvent
 
 /**
  * Watches which app comes to the foreground and covers blocked ones with the blocked screen.
- * Event-driven, plus a 30 s recheck so a video app left open past closing time, or past a granted
- * override, is still covered. Both the recheck and the remote-control connection pause while the
- * screen is off, so a sleeping tablet does no work for AppGate.
+ * Opening an app is caught by Android's own events, so nothing polls. The only timer is one recheck
+ * set for the exact moment the app in front could become blocked (RecheckPolicy): the window closing,
+ * a grant or Settings pass ending. Any rule change, on the tablet or from the phone, rechecks at
+ * once. Both the timer and the remote-control connection pause while the screen is off.
  */
 class GateService : AccessibilityService() {
 
@@ -35,32 +36,50 @@ class GateService : AccessibilityService() {
             when (intent.action) {
                 Intent.ACTION_SCREEN_OFF -> pause()
                 Intent.ACTION_SCREEN_ON -> resume()
+                // A clock or time zone change moves every boundary.
+                Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> handler.post(recheck)
             }
         }
     }
 
-    private val recheck = object : Runnable {
-        override fun run() {
-            foregroundPkg?.let(::enforce)
-            handler.postDelayed(this, RECHECK_MS)
-        }
+    private val recheck = Runnable {
+        foregroundPkg?.let(::enforce)
+        scheduleRecheck()
     }
+
+    /** Held here because SharedPreferences only holds it weakly. */
+    private var ruleListener: android.content.SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private var interactive = false
 
     override fun onServiceConnected() {
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
             registerReceiver(screenReceiver, filter)
         }
+        ruleListener = rules.listenForRuleChanges { if (interactive) handler.post(recheck) }
         val power = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (power.isInteractive) resume()
     }
 
+    /** Sets the one timer for when the app in front could next become blocked, if ever. */
+    private fun scheduleRecheck() {
+        handler.removeCallbacks(recheck)
+        if (!interactive) return
+        val pkg = foregroundPkg ?: return
+        val now = System.currentTimeMillis()
+        val at = rules.nextCheckAt(pkg, now) ?: return
+        handler.postDelayed(recheck, (at - now).coerceAtLeast(0L) + BOUNDARY_SLACK_MS)
+    }
+
     private fun resume() {
+        interactive = true
         handler.removeCallbacks(recheck)
         // Check at once: hours or a granted override may have ended while the screen was off.
         handler.post(recheck)
@@ -69,6 +88,7 @@ class GateService : AccessibilityService() {
     }
 
     private fun pause() {
+        interactive = false
         handler.removeCallbacks(recheck)
         remote.stop()
     }
@@ -85,6 +105,7 @@ class GateService : AccessibilityService() {
             foregroundPkg = pkg
         }
         enforce(pkg)
+        scheduleRecheck()
     }
 
     private fun enforce(pkg: String) {
@@ -122,14 +143,15 @@ class GateService : AccessibilityService() {
 
     override fun onDestroy() {
         pause()
+        ruleListener?.let(rules::stopListening)
         runCatching { unregisterReceiver(screenReceiver) }
         super.onDestroy()
     }
 
     companion object {
         private const val TAG = "GateService"
-        /** How late a block can be when hours or a grant end mid-video. Cheap: one preference read. */
-        private const val RECHECK_MS = 30_000L
+        /** Lands the recheck just past a boundary, so the end of a window reads as closed. */
+        private const val BOUNDARY_SLACK_MS = 500L
         private val TRANSIENT_PACKAGES = setOf("com.android.systemui")
     }
 }

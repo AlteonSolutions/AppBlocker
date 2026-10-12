@@ -127,6 +127,32 @@ class RuleStore(context: Context) {
         return null
     }
 
+    /** When the answer for [pkg] in front could next change on its own; see RecheckPolicy. */
+    fun nextCheckAt(pkg: String, now: Long = System.currentTimeMillis()): Long? = RecheckPolicy.nextCheckAt(
+        isVideoApp = pkg in videoPackages,
+        isSettings = pkg in SETTINGS_PACKAGES,
+        schedule = schedule,
+        overrideUntil = overrideUntil,
+        settingsUntil = settingsSessionUntil,
+        now = Calendar.getInstance().apply { timeInMillis = now },
+    )
+
+    /**
+     * Calls [onChange] whenever a blocking rule changes, from any screen or from the parent's phone.
+     * Keep the returned listener: SharedPreferences holds listeners weakly.
+     */
+    fun listenForRuleChanges(onChange: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key in RULE_KEYS || key.startsWith("weekday_") || key.startsWith("weekend_")) onChange()
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        return listener
+    }
+
+    fun stopListening(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        prefs.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
     private fun readWindow(prefix: String, fallback: TimeWindow) = TimeWindow(
         enabled = prefs.getBoolean("${prefix}_enabled", fallback.enabled),
         startMinute = prefs.getInt("${prefix}_start", fallback.startMinute),
@@ -152,6 +178,9 @@ class RuleStore(context: Context) {
         private const val KEY_LAST_ASK_AT = "remote_last_ask_at"
         private const val KEY_PARENT_PHONE = "parent_phone"
         private const val KEY_PAIRED_TABLETS = "paired_tablets"
+
+        /** Keys whose change can flip an allow/block answer (the window keys are matched by prefix). */
+        private val RULE_KEYS = setOf(KEY_VIDEO, KEY_OVERRIDE_UNTIL, KEY_SETTINGS_UNTIL)
 
         const val SETTINGS_SESSION_MS = 5 * 60_000L
         const val OVERRIDE_MS = 30 * 60_000L
