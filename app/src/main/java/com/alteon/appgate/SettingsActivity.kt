@@ -65,6 +65,41 @@ class SettingsActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refresh()
+        checkForUpdate()
+    }
+
+    /** The newest released version, once the background check has found it. */
+    private var latestVersion: String? = null
+
+    private fun checkForUpdate() {
+        Thread {
+            val latest = UpdateCheck.fetchLatestVersion()
+            runOnUiThread {
+                if (isFinishing) return@runOnUiThread
+                latestVersion = latest
+                renderUpdateButton()
+            }
+        }.start()
+    }
+
+    private fun renderUpdateButton() {
+        val installed = installedVersion()
+        val b = button(R.id.updateButton)
+        val latest = latestVersion
+        when (UpdateCheck.state(installed, latest)) {
+            UpdateCheck.State.UPDATE_AVAILABLE -> {
+                b.text = getString(R.string.update_available, latest, installed)
+                b.setTypeface(null, Typeface.BOLD)
+            }
+            UpdateCheck.State.UP_TO_DATE -> {
+                b.text = getString(R.string.update_up_to_date, installed)
+                b.setTypeface(null, Typeface.NORMAL)
+            }
+            UpdateCheck.State.UNKNOWN -> {
+                b.text = getString(R.string.update_app, installed)
+                b.setTypeface(null, Typeface.NORMAL)
+            }
+        }
     }
 
     override fun onStop() {
@@ -92,7 +127,7 @@ class SettingsActivity : Activity() {
         renderWindow(s.weekend, R.id.weekendEnabled, R.id.weekendStart, R.id.weekendEnd)
 
         val now = System.currentTimeMillis()
-        button(R.id.updateButton).text = getString(R.string.update_app, installedVersion())
+        renderUpdateButton()
         button(R.id.pairPhoneButton).setText(
             if (rules.pairing != null) R.string.pair_phone_paired else R.string.pair_phone
         )
@@ -191,7 +226,7 @@ class SettingsActivity : Activity() {
     private fun downloadLatest() {
         rules.startSettingsSession()
         try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LATEST_APK_URL)))
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(UpdateCheck.LATEST_APK_URL)))
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(this, R.string.update_no_browser, Toast.LENGTH_LONG).show()
         }
@@ -279,10 +314,4 @@ class SettingsActivity : Activity() {
 
     private fun button(id: Int): Button = findViewById(id)
 
-    companion object {
-        // GitHub redirects this to the newest release's asset. release.yml uploads every release under
-        // this fixed name as well as a versioned one, so this one link never goes stale.
-        private const val LATEST_APK_URL =
-            "https://github.com/AlteonSolutions/AppBlocker/releases/latest/download/appgate.apk"
-    }
 }

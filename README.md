@@ -44,7 +44,8 @@ the newest one. No GitHub account is needed (the repo is public).
 
 **Updating a tablet:** unlock the browser by whatever means it is normally locked, open AppGate,
 enter the PIN, tap **Download latest AppGate** under Parent tools, open the download and tap
-**Install** (or **Update**). The PIN and rules are kept. The button also starts the 5-minute Settings
+**Install** (or **Update**). The PIN and rules are kept. The button says whether a newer version is
+out ("Update available: 0.5.1 (you have 0.5.0)") or "AppGate is up to date". The button also starts the 5-minute Settings
 pass, in case Android asks to allow the browser to install apps. Then lock the browser again.
 
 **First install** (before AppGate is on the tablet): open that same link in the tablet's browser.
@@ -72,6 +73,7 @@ Zero runtime dependencies: framework classes only, no AndroidX, no Play Services
 | `RuleStore` | SharedPreferences: video package set, weekday and weekend windows, parent override expiry, Settings session expiry. Owns the single allow/block decision. |
 | `Schedule` / `TimeWindow` | Pure logic: is-open, current closing and next-opening. Unit tested. |
 | `RecheckPolicy` | Pure logic: when the app in front could next become blocked. Unit tested. |
+| `UpdateCheck` | Finds the newest release from GitHub's `releases/latest` redirect and compares it with the installed version, for the update button. Unit tested. |
 | `GrantPolicy` | Pure logic: how long a grant lasts (the minutes asked for, plus 5 to pick a show for the 1-hour grant). Unit tested. |
 | `PinManager` / `LockoutPolicy` | Salted PBKDF2WithHmacSHA1 (20k iterations) PIN hash; lockout 1, 5, then 15 min after 5, 6, 7+ wrong tries. Policy unit tested. |
 | `PinActivity` | Launcher. Create PIN (enter twice). On a paired tablet, only "ask my phone" shows; three quick taps on the logo reveal the PIN. Then opens settings. |

@@ -13,6 +13,12 @@ old one. Entry format:
 
 ---
 
+### 2026-10-14 – Show on the update button whether a newer version is out
+**Context.** "Download latest AppGate" looked the same whether or not there was anything new, so the parent couldn't tell whether an update was waiting.
+**Decision.** Each time settings opens, `UpdateCheck` sends a HEAD request to `github.com/.../releases/latest` and reads the version from the `releases/tag/vX.Y.Z` redirect, with no GitHub API or token. The button reads "Update available: X (you have Y)" in bold, "AppGate is up to date (Y)", or the plain label if the check fails. It always stays tappable. The download link moved into `UpdateCheck`, so it is defined once.
+**Rejected.** The GitHub releases API: rate-limited without a token, and JSON parsing for one string. Checking in the background and notifying: AppGate has no notifications, and the parent only acts on it from settings anyway.
+**Consequence.** Opening settings makes one small request to github.com. If GitHub changes that redirect, the button quietly falls back to the plain label. Supersedes: none.
+
 ### 2026-10-14 – Add the 5 pick-a-show minutes to the 1-hour grant only
 **Context.** The extra 5 minutes went on every grant, so 15 and 30 minutes unlocked for 20 and 35. The parent wants it only on the 1-hour grant.
 **Decision.** `GrantPolicy` adds 5 minutes to grants of 60 minutes or more. 15 and 30 are exact.

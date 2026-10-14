@@ -22,6 +22,7 @@ _Last updated 2026-10-08._
 - 0.4.0: unlocking AppGate on a paired tablet asks the parent's phone first, with the PIN as backup;
   the recheck and remote connection pause while the screen is off; popups no longer hide a video
   playing underneath from the recheck.
+- 0.5.0: the update button says whether a newer version is out or AppGate is up to date.
 - 0.4.4: only the 1-hour grant includes 5 extra minutes to pick a show (65 min); 15 and 30 are exact.
 - 0.4.3: every grant included 5 extra minutes to pick a show.
 - 0.4.2: on paired tablets the PIN is hidden; three quick taps on the logo reveal it.
