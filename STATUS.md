@@ -22,6 +22,7 @@ _Last updated 2026-10-08._
 - 0.4.0: unlocking AppGate on a paired tablet asks the parent's phone first, with the PIN as backup;
   the recheck and remote connection pause while the screen is off; popups no longer hide a video
   playing underneath from the recheck.
+- 0.4.2: on paired tablets the PIN is hidden; three quick taps on the logo reveal it.
 - 0.4.1: the 30 s recheck is replaced by one timer at the exact moment the app in front could become
   blocked, plus an immediate recheck on any rule change (including from the phone).
 - **Not yet verified on a device:** the blocked screen, the download-and-update flow, and the whole

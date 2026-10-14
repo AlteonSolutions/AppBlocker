@@ -13,6 +13,12 @@ old one. Entry format:
 
 ---
 
+### 2026-10-14 – Hide the PIN behind three taps on the logo on paired tablets
+**Context.** The visible **Use PIN instead** button told kids a PIN existed and gave them a box to guess at. The PIN entry also appeared on its own whenever the phone request failed, so turning the Wi-Fi off was a way to reach it.
+**Decision.** On a paired tablet the unlock screen shows only the logo, the title and **Ask my phone to unlock**. Three taps on the logo within 2 seconds reveal the PIN entry. A failed request says to check the Wi-Fi and never reveals the PIN. Unpaired tablets show the PIN as before.
+**Rejected.** A long-press or a hidden corner: no more secret than three taps, and harder to remember. Removing the PIN: no Wi-Fi or no phone would lock the parent out.
+**Consequence.** Anyone who knows the gesture, or reads this repo, can reach the PIN box. It still needs the PIN, and the wrong-PIN lockouts still apply. Supersedes: 2026-10-12 (Unlock AppGate's settings from the parent's phone, with the PIN as backup), only its visible **Use PIN instead** button.
+
 ### 2026-10-12 – Recheck at the exact moment a rule can change, instead of every 30 s
 **Context.** Opening an app is already caught by Android's accessibility events. The 30 s recheck existed only for time running out while an app is open, yet it ran all day, allowed hours included, and still blocked up to 30 s late.
 **Decision.** `RecheckPolicy` gives the next moment the answer for the app in front could change on its own: the window closing or a grant ending for a video app, the pass ending for Settings, and never for other apps. `GateService` sets one timer for that moment, re-set on every app switch. Rule changes (`RuleStore.listenForRuleChanges`, so phone commands too) and clock or time-zone changes recheck at once. The screen-off pause stays.

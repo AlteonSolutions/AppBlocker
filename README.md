@@ -73,7 +73,7 @@ Zero runtime dependencies: framework classes only, no AndroidX, no Play Services
 | `Schedule` / `TimeWindow` | Pure logic: is-open, current closing and next-opening. Unit tested. |
 | `RecheckPolicy` | Pure logic: when the app in front could next become blocked. Unit tested. |
 | `PinManager` / `LockoutPolicy` | Salted PBKDF2WithHmacSHA1 (20k iterations) PIN hash; lockout 1, 5, then 15 min after 5, 6, 7+ wrong tries. Policy unit tested. |
-| `PinActivity` | Launcher. Create PIN (enter twice). On a paired tablet, unlocking asks the parent's phone first, with the PIN as backup. Then opens settings. |
+| `PinActivity` | Launcher. Create PIN (enter twice). On a paired tablet, only "ask my phone" shows; three quick taps on the logo reveal the PIN. Then opens settings. |
 | `SettingsActivity` | Not exported; finishes in `onStop` so leaving it re-locks. Setup buttons, app picker dialog, time windows, 30-min override, 5-min Settings pass, change PIN, lock. |
 | `BlockedActivity` | Shows when videos reopen ("today at 3:00 PM", "tomorrow", weekday name), or that Settings is locked. |
 | `AdminReceiver` | Device admin with no policies; exists only to block uninstall. |
@@ -118,8 +118,8 @@ Then:
 - In AppGate on the phone: allow 15/30/60 minutes, end video time, change weekday and weekend hours,
   lock Android Settings, and see the tablet's current settings. Video apps are still chosen on the tablet.
 - Opening AppGate on a paired tablet shows **Ask my phone to unlock**. The phone gets "<tablet>: open
-  AppGate settings?" with an **Unlock settings** button. **Use PIN instead** is the backup, for no
-  Wi-Fi or no phone nearby.
+  AppGate settings?" with an **Unlock settings** button. The PIN is the hidden backup, for no Wi-Fi or
+  no phone nearby: **tap the AppGate logo 3 times quickly** to show the PIN entry.
 - **New code** on the tablet unpairs every phone; pair again with the new code.
 - The tablet only listens while its screen is on. A command sent while it sleeps is missed (the phone
   says the tablet didn't answer); send it again once the tablet is awake.

@@ -56,11 +56,11 @@ class PinActivity : Activity() {
             }
         }
         findViewById<Button>(R.id.unlockButton).setOnClickListener { askPhoneToUnlock() }
-        findViewById<Button>(R.id.usePinButton).setOnClickListener { showPinEntry(true) }
-        // A paired tablet unlocks from the parent's phone first; the PIN is the backup.
+        // A paired tablet only shows "ask my phone". The PIN backup is hidden behind tapping the logo
+        // three times, so a kid sees no PIN box to guess at, even with the Wi-Fi off.
         val remoteFirst = mode == Mode.VERIFY && rules.pairing != null
         findViewById<View>(R.id.unlockButton).visibility = if (remoteFirst) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.usePinButton).visibility = if (remoteFirst) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.pinLogo).setOnClickListener { if (remoteFirst) onLogoTap() }
         showPinEntry(!remoteFirst)
         input.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) { onSubmit(); true } else false
@@ -86,11 +86,27 @@ class PinActivity : Activity() {
         submit.visibility = v
         error.visibility = v
         if (show) {
-            findViewById<View>(R.id.usePinButton).visibility = View.GONE
             input.requestFocus()
             (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(input, 0)
         }
         render()
+    }
+
+    private var logoTaps = 0
+    private var firstLogoTapAt = 0L
+
+    /** Three taps on the logo within LOGO_TAP_WINDOW_MS reveal the PIN entry. */
+    private fun onLogoTap() {
+        val now = System.currentTimeMillis()
+        if (now - firstLogoTapAt > LOGO_TAP_WINDOW_MS) {
+            firstLogoTapAt = now
+            logoTaps = 0
+        }
+        logoTaps++
+        if (logoTaps >= LOGO_TAPS_FOR_PIN) {
+            logoTaps = 0
+            showPinEntry(true)
+        }
     }
 
     private fun askPhoneToUnlock() {
@@ -104,9 +120,9 @@ class PinActivity : Activity() {
             val nonce = RemoteListener.askUnlock(applicationContext, askedAt)
             if (nonce == null) {
                 runOnUiThread {
+                    // Never reveal the PIN here: a kid could turn the Wi-Fi off to get to it.
                     status.setText(R.string.unlock_failed)
                     button.isEnabled = true
-                    showPinEntry(true)
                 }
                 return@Thread
             }
@@ -192,6 +208,9 @@ class PinActivity : Activity() {
         private const val EXTRA_RESET = "reset"
         /** Long enough to find the phone; the notification itself stays answerable for 10 minutes. */
         private const val UNLOCK_WAIT_MS = 3 * 60_000L
+        /** Deliberate enough not to happen by accident, quick enough to remember. */
+        private const val LOGO_TAPS_FOR_PIN = 3
+        private const val LOGO_TAP_WINDOW_MS = 2_000L
 
         fun resetIntent(context: Context): Intent =
             Intent(context, PinActivity::class.java).putExtra(EXTRA_RESET, true)
