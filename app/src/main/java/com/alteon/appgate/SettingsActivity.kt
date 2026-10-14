@@ -43,7 +43,7 @@ class SettingsActivity : Activity() {
 
         button(R.id.overrideButton).setOnClickListener {
             val now = System.currentTimeMillis()
-            rules.overrideUntil = if (now < rules.overrideUntil) 0L else now + RuleStore.OVERRIDE_MS
+            if (now < rules.overrideUntil) rules.overrideUntil = 0L else rules.grantVideos(RuleStore.OVERRIDE_MINUTES, now)
             refresh()
         }
         button(R.id.openSettingsButton).setOnClickListener {
@@ -100,7 +100,7 @@ class SettingsActivity : Activity() {
         button(R.id.overrideButton).text = if (now < rules.overrideUntil) {
             getString(R.string.override_end, formatTime(rules.overrideUntil))
         } else {
-            getString(R.string.override_start, (RuleStore.OVERRIDE_MS / 60_000L).toInt())
+            getString(R.string.override_start, RuleStore.OVERRIDE_MINUTES)
         }
     }
 

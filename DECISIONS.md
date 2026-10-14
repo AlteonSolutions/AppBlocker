@@ -13,6 +13,12 @@ old one. Entry format:
 
 ---
 
+### 2026-10-14 – Add 5 minutes to every grant for picking a show
+**Context.** A grant usually comes before the kids have picked a show, so "1 hour" ended five minutes into the last episode they chose.
+**Decision.** `GrantPolicy` adds 5 minutes to every grant: phone commands, notification buttons, and the tablet's own **Allow videos** button. The buttons keep their round numbers (15, 30, 60), and a grant still never shortens one already running longer.
+**Rejected.** Extra time on the 1-hour grant only: shorter grants need picking time too. Relabelling the buttons 20, 35 and 65: odd numbers for the parent to think in.
+**Consequence.** Grants last 20, 35 and 65 minutes. The phone shows the real end time. Supersedes: none.
+
 ### 2026-10-14 – Hide the PIN behind three taps on the logo on paired tablets
 **Context.** The visible **Use PIN instead** button told kids a PIN existed and gave them a box to guess at. The PIN entry also appeared on its own whenever the phone request failed, so turning the Wi-Fi off was a way to reach it.
 **Decision.** On a paired tablet the unlock screen shows only the logo, the title and **Ask my phone to unlock**. Three taps on the logo within 2 seconds reveal the PIN entry. A failed request says to check the Wi-Fi and never reveals the PIN. Unpaired tablets show the PIN as before.

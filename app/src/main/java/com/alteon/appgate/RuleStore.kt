@@ -52,7 +52,7 @@ class RuleStore(context: Context) {
 
     /** Grants video time; never shortens a grant that already runs longer. */
     fun grantVideos(minutes: Int, now: Long = System.currentTimeMillis()) {
-        overrideUntil = maxOf(overrideUntil, now + minutes * 60_000L)
+        overrideUntil = GrantPolicy.grantUntil(overrideUntil, minutes, now)
     }
 
     // ---- Remote control, tablet side (see RemoteProtocol) ----
@@ -183,7 +183,8 @@ class RuleStore(context: Context) {
         private val RULE_KEYS = setOf(KEY_VIDEO, KEY_OVERRIDE_UNTIL, KEY_SETTINGS_UNTIL)
 
         const val SETTINGS_SESSION_MS = 5 * 60_000L
-        const val OVERRIDE_MS = 30 * 60_000L
+        /** The tablet's own "Allow videos" button; GrantPolicy adds time to pick a show. */
+        const val OVERRIDE_MINUTES = 30
 
         val SETTINGS_PACKAGES = setOf("com.android.settings")
 
