@@ -72,7 +72,7 @@ Zero runtime dependencies: framework classes only, no AndroidX, no Play Services
 | `RuleStore` | SharedPreferences: video package set, weekday and weekend windows, parent override expiry, Settings session expiry. Owns the single allow/block decision. |
 | `Schedule` / `TimeWindow` | Pure logic: is-open, current closing and next-opening. Unit tested. |
 | `RecheckPolicy` | Pure logic: when the app in front could next become blocked. Unit tested. |
-| `GrantPolicy` | Pure logic: how long a grant lasts (the minutes asked for, plus 5 to pick a show). Unit tested. |
+| `GrantPolicy` | Pure logic: how long a grant lasts (the minutes asked for, plus 5 to pick a show for the 1-hour grant). Unit tested. |
 | `PinManager` / `LockoutPolicy` | Salted PBKDF2WithHmacSHA1 (20k iterations) PIN hash; lockout 1, 5, then 15 min after 5, 6, 7+ wrong tries. Policy unit tested. |
 | `PinActivity` | Launcher. Create PIN (enter twice). On a paired tablet, only "ask my phone" shows; three quick taps on the logo reveal the PIN. Then opens settings. |
 | `SettingsActivity` | Not exported; finishes in `onStop` so leaving it re-locks. Setup buttons, app picker dialog, time windows, 30-min override, 5-min Settings pass, change PIN, lock. |
@@ -116,8 +116,8 @@ without it.
 Then:
 - On the blocked screen, a kid taps **Ask a parent**. The phone shows "<tablet> wants videos" with
   **15 min**, **30 min** and **60 min** buttons. Ignoring it means no (Android allows three buttons).
-- Every grant, from the phone or the tablet, includes 5 extra minutes to pick a show: 60 min unlocks
-  for 65.
+- The 60-minute grant includes 5 extra minutes to pick a show, so it unlocks for 65. 15 and 30 are
+  exact.
 - In AppGate on the phone: allow 15/30/60 minutes, end video time, change weekday and weekend hours,
   lock Android Settings, and see the tablet's current settings. Video apps are still chosen on the tablet.
 - Opening AppGate on a paired tablet shows **Ask my phone to unlock**. The phone gets "<tablet>: open

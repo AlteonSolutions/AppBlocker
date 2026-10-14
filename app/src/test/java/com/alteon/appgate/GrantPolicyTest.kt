@@ -11,9 +11,9 @@ class GrantPolicyTest {
         assertEquals(now + 65 * minute, GrantPolicy.grantUntil(0L, 60, now))
     }
 
-    @Test fun everyChoiceGetsTimeToPickAShow() {
-        assertEquals(now + 20 * minute, GrantPolicy.grantUntil(0L, 15, now))
-        assertEquals(now + 35 * minute, GrantPolicy.grantUntil(0L, 30, now))
+    @Test fun shorterGrantsAreExact() {
+        assertEquals(now + 15 * minute, GrantPolicy.grantUntil(0L, 15, now))
+        assertEquals(now + 30 * minute, GrantPolicy.grantUntil(0L, 30, now))
     }
 
     @Test fun shorterGrantNeverCutsALongerOneShort() {
@@ -22,6 +22,6 @@ class GrantPolicyTest {
     }
 
     @Test fun expiredGrantIsReplaced() {
-        assertEquals(now + 35 * minute, GrantPolicy.grantUntil(now - minute, 30, now))
+        assertEquals(now + 30 * minute, GrantPolicy.grantUntil(now - minute, 30, now))
     }
 }
